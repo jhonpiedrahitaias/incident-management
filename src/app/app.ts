@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MOCK_USERS } from './core/mocks/users.mock';
 import { HeaderComponent } from './layout/header/header.component';
@@ -6,7 +6,7 @@ import { FooterComponent } from './layout/footer/footer.component';
 
 @Component({
   selector: 'app-root',
-imports: [RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

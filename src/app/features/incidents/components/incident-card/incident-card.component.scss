@@ -1,0 +1,147 @@
+/* Los estilos de este archivo están encapsulados: solo afectan al template
+   de IncidentCard, aunque las clases se llamen igual en otros componentes. */
+
+:host {
+  display: block;
+  /* Como es celda de una cuadrícula, ocupa toda la altura de su fila para
+     que las tarjetas de una misma fila queden alineadas. */
+  height: 100%;
+}
+
+.incident-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+
+  &--selected {
+    border-color: var(--color-primary);
+    /* Segundo indicador además del color, para no depender solo de él. */
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+    background-color: var(--color-surface-muted);
+  }
+
+  &-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  &-title {
+    margin: 0;
+    font-size: var(--font-size-base);
+    /* Un título sin espacios no puede desbordar la tarjeta. */
+    overflow-wrap: anywhere;
+  }
+
+  &-description {
+    margin: 0;
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  &-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+  }
+
+  &-agent {
+    color: var(--color-text-muted);
+
+    &--unassigned {
+      font-style: italic;
+    }
+  }
+
+  &-date {
+    color: var(--color-text-muted);
+  }
+
+  &-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    /* Empuja las acciones al pie de la tarjeta, sin importar cuánto texto
+       tenga la descripción. */
+    margin-top: auto;
+    padding-top: var(--space-2);
+  }
+
+  &-select[aria-pressed='true'] {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-primary-contrast);
+  }
+
+  &-icon {
+    display: block;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-status-closed-bg);
+  color: var(--color-status-closed-text);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--priority-low {
+    background-color: var(--color-priority-low-bg);
+    color: var(--color-priority-low-text);
+  }
+
+  &--priority-medium {
+    background-color: var(--color-priority-medium-bg);
+    color: var(--color-priority-medium-text);
+  }
+
+  &--priority-high {
+    background-color: var(--color-priority-high-bg);
+    color: var(--color-priority-high-text);
+  }
+
+  &--priority-critical {
+    background-color: var(--color-priority-critical-bg);
+    color: var(--color-priority-critical-text);
+  }
+
+  &--status-open {
+    background-color: var(--color-status-open-bg);
+    color: var(--color-status-open-text);
+  }
+
+  &--status-in-progress {
+    background-color: var(--color-status-progress-bg);
+    color: var(--color-status-progress-text);
+  }
+
+  &--status-resolved {
+    background-color: var(--color-status-resolved-bg);
+    color: var(--color-status-resolved-text);
+  }
+
+  &--status-closed {
+    background-color: var(--color-status-closed-bg);
+    color: var(--color-status-closed-text);
+  }
+}
