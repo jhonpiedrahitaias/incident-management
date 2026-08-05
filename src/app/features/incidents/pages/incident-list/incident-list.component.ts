@@ -29,7 +29,6 @@ export class IncidentList {
   }
 
   protected onDeleteRequested(incident: Incident): void {
-    // Se crea un arreglo nuevo en lugar de mutar el existente (inmutabilidad).
     this.incidents.update((current) => current.filter((item) => item.id !== incident.id));
   }
 

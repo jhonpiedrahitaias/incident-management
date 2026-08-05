@@ -73,14 +73,11 @@
       [attr.aria-pressed]="selected()"
       (click)="onSelect()"
     >
-      <!-- Sin espacio antes del <span>: forma parte del nombre accesible. -->
-      {{ selected() ? 'Seleccionada' : 'Seleccionar' }}<span class="visually-hidden"
+      {{ selected() ? 'Seleccionado' : 'Seleccionar' }}<span class="visually-hidden"
         >: {{ incident().title }}</span
       >
     </button>
 
-    <!-- Botón solo con icono: el nombre accesible lo aporta aria-label,
-         y el SVG se oculta a las tecnologías de asistencia. -->
     <button
       type="button"
       class="btn btn--danger btn--icon"

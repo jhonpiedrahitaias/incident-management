@@ -11,7 +11,6 @@ import { DatePipe } from "@angular/common";
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IncidentCard {
-  /** Incidencia a representar. Requerida: la tarjeta no existe sin ella. */
   readonly incident = input.required<Incident>();
 
   /** Marca la tarjeta como seleccionada. Opcional, `false` por defecto. */
