@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { Incident, IncidentDraft } from '../models/incident.model';
 import { IncidentSearchCriteria } from '../models/incident-search-criteria.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
@@ -8,9 +8,17 @@ import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
   providedIn: 'root',
 })
 export class IncidentService {
-
+  readonly totalCount = computed(() => this.collection().length);
   private readonly collection = signal<readonly Incident[]>(MOCK_INCIDENTS);
   readonly incidents = this.collection.asReadonly();
+
+  readonly criticalCount = computed(
+    () => this.collection().filter((incident) => incident.priority === 'CRITICAL').length,
+  );
+
+  readonly openCount = computed(
+    () => this.collection().filter((incident) => incident.status === 'OPEN').length,
+  );
 
   getAll(): readonly Incident[] {
     return [...this.collection()];
@@ -57,7 +65,6 @@ export class IncidentService {
     return this.collection() === MOCK_INCIDENTS;
   }
 
-  /** Siguiente identificador correlativo (`inc-006`, `inc-007`, …). */
   private nextId(): string {
     const highest = this.collection().reduce((max, incident) => {
       const value = Number.parseInt(incident.id.replace(/\D/g, ''), 10);
