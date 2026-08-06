@@ -4,13 +4,16 @@ import { Incident } from "../../../../core/models/incident.model";
 import { IncidentCard } from "../../components/incident-card/incident-card.component";
 import { UpperCasePipe } from "@angular/common";
 import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority-pipe";
+import { IncidentHighlight } from "../../../../shared/directives/incident-highlight";
 
 @Component({
   selector: 'app-incident-list',
 imports: [
   IncidentCard, 
   UpperCasePipe, 
-  IncidentPriorityPipe],
+  IncidentPriorityPipe,
+  IncidentHighlight
+],
   templateUrl: './incident-list.component.html',
   styleUrl: './incident-list.component.scss',
 })

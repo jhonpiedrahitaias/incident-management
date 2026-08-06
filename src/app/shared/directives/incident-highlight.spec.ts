@@ -1,0 +1,1 @@
+import { IncidentHighlight } from './incident-highlight';
