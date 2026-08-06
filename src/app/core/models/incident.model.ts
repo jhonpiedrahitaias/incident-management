@@ -14,3 +14,7 @@ export interface Incident {
   createdAt: string;
   updatedAt: string;
 }
+
+export type IncidentDraft = Omit<Incident, 'id' | 'status'| 'createdAt' | 'updatedAt'> & {
+  readonly status?: IncidentStatus;
+};
