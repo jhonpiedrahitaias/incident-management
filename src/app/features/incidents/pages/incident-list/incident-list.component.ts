@@ -1,10 +1,11 @@
-import { Component, signal, computed } from "@angular/core";
+import { Component, signal, computed, inject } from "@angular/core";
 import { MOCK_INCIDENTS } from "../../../../core/mocks/incidents.mock";
 import { Incident } from "../../../../core/models/incident.model";
 import { IncidentCard } from "../../components/incident-card/incident-card.component";
 import { UpperCasePipe } from "@angular/common";
 import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority-pipe";
 import { IncidentHighlight } from "../../../../shared/directives/incident-highlight";
+import { IncidentService } from "../../../../core/services/incident-service";
 
 @Component({
   selector: 'app-incident-list',
@@ -18,29 +19,25 @@ imports: [
   styleUrl: './incident-list.component.scss',
 })
 export class IncidentList {
-  /** El contenedor es el único dueño de la colección. */
-  protected readonly incidents = signal<readonly Incident[]>(MOCK_INCIDENTS);
-
-  /** Guardamos el id, no el objeto: así la selección sigue siendo válida si la colección cambia. */
+  private readonly incidentService = inject(IncidentService);
+  protected readonly incidents = this.incidentService.incidents;
   protected readonly selectedId = signal<string | null>(null);
 
   protected readonly selectedIncident = computed(() =>
     this.incidents().find((incident) => incident.id === this.selectedId()),
   );
 
-  protected readonly isRestoreDisabled = computed(
-    () => this.incidents().length === MOCK_INCIDENTS.length,
-  );
+  protected readonly isRestoreDisabled = computed(() => this.incidentService.isPristine());
 
   protected onIncidentSelected(incident: Incident): void {
     this.selectedId.update((current) => (current === incident.id ? null : incident.id));
   }
 
   protected onDeleteRequested(incident: Incident): void {
-    this.incidents.update((current) => current.filter((item) => item.id !== incident.id));
+  this.incidentService.remove(incident.id);
   }
 
   protected restoreIncidents(): void {
-    this.incidents.set(MOCK_INCIDENTS);
+    this.incidentService.reset();
   }
 }
