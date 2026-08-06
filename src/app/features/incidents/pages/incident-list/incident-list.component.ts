@@ -2,10 +2,15 @@ import { Component, signal, computed } from "@angular/core";
 import { MOCK_INCIDENTS } from "../../../../core/mocks/incidents.mock";
 import { Incident } from "../../../../core/models/incident.model";
 import { IncidentCard } from "../../components/incident-card/incident-card.component";
+import { UpperCasePipe } from "@angular/common";
+import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority-pipe";
 
 @Component({
   selector: 'app-incident-list',
-  imports: [IncidentCard],
+imports: [
+  IncidentCard, 
+  UpperCasePipe, 
+  IncidentPriorityPipe],
   templateUrl: './incident-list.component.html',
   styleUrl: './incident-list.component.scss',
 })
