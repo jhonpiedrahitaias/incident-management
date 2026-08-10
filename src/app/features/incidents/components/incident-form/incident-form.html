@@ -15,7 +15,7 @@
       [attr.aria-describedby]="showError('title') ? 'incident-title-error' : null"
     />
     @if (showError('title')) {
-      <p class="incident-form-error" id="incident-title-error">{{ errorMessage('title') }}</p>
+      <p class="incident-form-error" id="incident-title-error">{{ fieldError('title') }}</p>
     }
   </div>
 
@@ -34,7 +34,7 @@
     ></textarea>
     @if (showError('description')) {
       <p class="incident-form-error" id="incident-description-error">
-        {{ errorMessage('description') }}
+        {{ fieldError('description') }}
       </p>
     }
   </div>
@@ -55,7 +55,7 @@
       />
       @if (showError('category')) {
         <p class="incident-form-error" id="incident-category-error">
-          {{ errorMessage('category') }}
+          {{ fieldError('category') }}
         </p>
       }
     </div>
@@ -80,25 +80,70 @@
       </select>
       @if (showError('priority')) {
         <p class="incident-form-error" id="incident-priority-error">
-          {{ errorMessage('priority') }}
+          {{ fieldError('priority') }}
         </p>
       }
     </div>
   </div>
 
+  <fieldset class="incident-form-tags" formArrayName="tags">
+    <legend class="incident-form-label">Etiquetas (opcional)</legend>
+
+    @for (tag of tags.controls; track tag) {
+      <div class="incident-form-tag">
+        <label class="visually-hidden" [attr.for]="'incident-tag-' + $index">
+          Etiqueta {{ $index + 1 }}
+        </label>
+        <input
+          class="incident-form-control"
+          type="text"
+          [id]="'incident-tag-' + $index"
+          [formControlName]="$index"
+          [attr.aria-invalid]="showTagError($index)"
+          [attr.aria-describedby]="showTagError($index) ? 'incident-tag-' + $index + '-error' : null"
+        />
+        <button
+          type="button"
+          class="btn btn--danger"
+          [attr.aria-label]="'Quitar la etiqueta ' + ($index + 1)"
+          (click)="removeTag($index)"
+        >
+          Quitar
+        </button>
+
+        @if (showTagError($index)) {
+          <p class="incident-form-error" [id]="'incident-tag-' + $index + '-error'">
+            {{ tagError($index) }}
+          </p>
+        }
+      </div>
+    } @empty {
+      <p class="incident-form-hint">Sin etiquetas. Puedes añadir hasta {{ maxTags }}.</p>
+    }
+
+    @if (showTagsError()) {
+      <p class="incident-form-error" id="incident-tags-error">{{ tagsErrorMessage() }}</p>
+    }
+
+    <button
+      type="button"
+      class="btn"
+      [disabled]="tags.length >= maxTags"
+      (click)="addTag()"
+    >
+      Añadir etiqueta
+    </button>
+  </fieldset>
+
   <p class="incident-form-hint">Los campos marcados con * son obligatorios.</p>
 
   <div class="incident-form-actions">
-    <!-- El envío se bloquea mientras el formulario sea inválido. El
-         `novalidate` del <form> desactiva los mensajes del navegador para
-         que los únicos visibles sean los nuestros. -->
     <button type="submit" class="btn btn--primary" [disabled]="form.invalid">
       Registrar incidencia
     </button>
     <button type="button" class="btn" (click)="resetForm()">Limpiar</button>
   </div>
 
-  <!-- Confirmación del registro. `role="status"` lo anuncia sin interrumpir. -->
   <p class="incident-form-success" role="status">
     @if (lastRegisteredTitle(); as title) {
       Incidencia «{{ title }}» registrada correctamente.

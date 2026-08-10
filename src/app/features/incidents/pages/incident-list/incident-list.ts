@@ -1,37 +1,32 @@
-import { UpperCasePipe } from "@angular/common";
-import { Component, inject, signal, computed } from "@angular/core";
-import { IncidentSearchCriteria } from "../../../../core/models/incident-search-criteria.model";
-import { IncidentStatus, IncidentPriority, Incident } from "../../../../core/models/incident.model";
-import { IncidentService } from "../../../../core/services/incident-service";
-import { IncidentHighlight } from "../../../../shared/directives/incident-highlight";
-import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority-pipe";
-import { IncidentCard } from "../../components/incident-card/incident-card.component";
-import { UserService } from "../../../../core/services/user-service";
-import { IncidentForm, IncidentFormValue } from "../../components/incident-form/incident-form.component";
+import { Component, computed, inject, signal } from '@angular/core';
+import { UpperCasePipe } from '@angular/common';
+import {
+  Incident,
+  IncidentPriority,
+  IncidentStatus,
+} from '../../../../core/models/incident.model';
+import { IncidentSearchCriteria } from '../../../../core/models/incident-search-criteria.model';
+import { RouterLink } from '@angular/router';
+import { IncidentService } from '../../../../core/services/incident-service';
+import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
+import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
+import { IncidentCard } from '../../components/incident-card/incident-card.component';
 
 const ANY = '';
 
 @Component({
   selector: 'app-incident-list',
-  imports: [
-    IncidentCard,
-    IncidentForm,
-    UpperCasePipe,
-    IncidentPriorityPipe,
-    IncidentHighlight,
-  ],
-  templateUrl: './incident-list.component.html',
-  styleUrl: './incident-list.component.scss',
+  imports: [IncidentCard, UpperCasePipe, IncidentPriorityPipe, IncidentHighlight, RouterLink],
+  templateUrl: './incident-list.html',
+  styleUrl: './incident-list.scss',
 })
 export class IncidentList {
   private readonly incidentService = inject(IncidentService);
-  private readonly userService = inject(UserService);
 
   protected readonly incidents = this.incidentService.incidents;
   protected readonly totalCount = this.incidentService.totalCount;
   protected readonly criticalCount = this.incidentService.criticalCount;
   protected readonly openCount = this.incidentService.openCount;
-
   protected readonly searchTerm = signal('');
   protected readonly statusFilter = signal<IncidentStatus | typeof ANY>(ANY);
   protected readonly priorityFilter = signal<IncidentPriority | typeof ANY>(ANY);
@@ -94,12 +89,5 @@ export class IncidentList {
 
   protected restoreIncidents(): void {
     this.incidentService.reset();
-  }
-
-  protected onIncidentSubmitted(value: IncidentFormValue): void {
-    this.incidentService.create({
-      ...value,
-      reporterId: this.userService.currentUser().id,
-    });
   }
 }
