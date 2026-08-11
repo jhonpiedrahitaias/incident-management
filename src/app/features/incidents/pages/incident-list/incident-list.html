@@ -3,14 +3,27 @@
     <h2 class="incident-list-title" id="incident-list-title">Incidencias registradas</h2>
     <div class="incident-list-header-actions">
       <a class="btn btn--primary" routerLink="/incidents/new">Registrar incidencia</a>
-      <button type="button" class="btn" [disabled]="isRestoreDisabled()" (click)="restoreIncidents()">
-        Restaurar lista
+      <button type="button" class="btn" [disabled]="loading()" (click)="reload()">
+        {{ loading() ? 'Cargando…' : 'Recargar' }}
       </button>
     </div>
   </header>
 
-  <!-- Indicadores derivados: ninguno se guarda, todos son computed sobre la
-       colección del servicio. -->
+  @if (loading()) {
+  <p class="loading" role="status">
+    <span class="loading__spinner" aria-hidden="true"></span>
+    Cargando incidencias…
+  </p>
+  }
+
+  <!-- `role="alert"` sí interrumpe: un fallo merece la atención inmediata. -->
+  @if (error(); as message) {
+  <p class="error-banner" role="alert">
+    {{ message }}
+    <button type="button" class="btn" (click)="reload()">Reintentar</button>
+  </p>
+  }
+
   <ul class="stats" aria-label="Resumen de incidencias">
     <li class="stats-item">
       <span class="stats-value">{{ totalCount() }}</span>
@@ -84,7 +97,9 @@
     </li>
     } @empty {
     <li class="incident-list-empty">
-      @if (hasActiveFilters()) {
+      @if (!loaded()) {
+      Cargando…
+      } @else if (hasActiveFilters()) {
       Ninguna incidencia coincide con los filtros aplicados.
       } @else {
       No hay incidencias registradas.
