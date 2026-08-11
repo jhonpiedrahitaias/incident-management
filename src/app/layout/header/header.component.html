@@ -7,15 +7,38 @@
         <li>
           <a
             class="app-header-nav-link"
+            routerLink="/dashboard"
+            routerLinkActive="app-header-nav-link--active"
+            ariaCurrentWhenActive="page"
+          >
+            Panel
+          </a>
+        </li>
+        <li>
+          <a
+            class="app-header-nav-link"
             routerLink="/incidents"
             routerLinkActive="app-header-nav-link--active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
           >
             Incidencias
+          </a>
+        </li>
+        <li>
+          <a
+            class="app-header-nav-link"
+            routerLink="/incidents/new"
+            routerLinkActive="app-header-nav-link--active"
+            ariaCurrentWhenActive="page"
+          >
+            Nueva
           </a>
         </li>
       </ul>
     </nav>
 
+    <!-- La misma directiva de foco que usa la tarjeta, en otro componente. -->
     <div class="app-header-user" appFocusWithin>
       <span class="app-header-user-name">{{ userName }}</span>
       <button

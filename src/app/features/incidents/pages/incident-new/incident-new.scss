@@ -52,7 +52,6 @@
     font: inherit;
     font-size: var(--font-size-sm);
 
-    /* El borde rojo acompaña al mensaje de error; nunca es el único aviso. */
     &[aria-invalid='true'] {
       border-color: var(--color-danger);
     }
@@ -74,6 +73,36 @@
     color: var(--color-text-muted);
   }
 
+  &-tags {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+
+    > .btn {
+      align-self: flex-start;
+    }
+  }
+
+  &-tag {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+
+    > .incident-form-control {
+      flex: 1 1 10rem;
+      min-width: 0;
+    }
+
+    > .incident-form-error {
+      flex-basis: 100%;
+    }
+  }
+
   &-actions {
     display: flex;
     flex-wrap: wrap;
@@ -84,6 +113,7 @@
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-status-resolved-text);
+
     min-height: 1.25rem;
   }
 }

@@ -5,6 +5,7 @@ import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority
 import { RelativeTimePipe } from "../../../../shared/pipes/relative-time-pipe";
 import { FocusWithin } from "../../../../shared/directives/focus-within";
 import { IncidentHighlight } from "../../../../shared/directives/incident-highlight";
+import { RouterLink } from "@angular/router";
 
 
 @Component({
@@ -16,8 +17,9 @@ import { IncidentHighlight } from "../../../../shared/directives/incident-highli
     UpperCasePipe,
     IncidentPriorityPipe,
     RelativeTimePipe,
-     IncidentHighlight,
+    IncidentHighlight,
     FocusWithin,
+    RouterLink,
   ],
   templateUrl: './incident-card.component.html',
   styleUrl: './incident-card.component.scss',
@@ -25,13 +27,11 @@ import { IncidentHighlight } from "../../../../shared/directives/incident-highli
 })
 export class IncidentCard {
   readonly incident = input.required<Incident>();
-
   readonly selected = input(false);
-
   readonly incidentSelected = output<Incident>();
-
   readonly deleteRequested = output<Incident>();
-
+  readonly detailLink = input<readonly unknown[] | null>(null);
+  
   protected onSelect(): void {
     this.incidentSelected.emit(this.incident());
   }

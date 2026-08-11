@@ -11,10 +11,12 @@ export interface Incident {
   status: IncidentStatus;
   reporterId: string;
   assignedAgentId?: string;
+  tags?: readonly string[];
   createdAt: string;
   updatedAt: string;
 }
 
-export type IncidentDraft = Omit<Incident, 'id' | 'status'| 'createdAt' | 'updatedAt'> & {
+
+export type IncidentDraft = Omit<Incident, 'id' | 'status' | 'createdAt' | 'updatedAt'> & {
   readonly status?: IncidentStatus;
 };

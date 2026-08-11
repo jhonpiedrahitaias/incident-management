@@ -32,7 +32,6 @@ export class IncidentService {
     return this.collection().filter((incident) => criteria.matches(incident));
   }
 
-
   create(draft: IncidentDraft): Incident {
     const now = new Date().toISOString();
     const incident: Incident = {

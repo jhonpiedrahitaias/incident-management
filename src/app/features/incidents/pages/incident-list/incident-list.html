@@ -1,18 +1,13 @@
 <section class="incident-list" aria-labelledby="incident-list-title">
   <header class="incident-list-header">
     <h2 class="incident-list-title" id="incident-list-title">Incidencias registradas</h2>
-
-    <button
-      type="button"
-      class="btn"
-      [disabled]="isRestoreDisabled()"
-      (click)="restoreIncidents()"
-    >
-      Restaurar lista
-    </button>
+    <div class="incident-list-header-actions">
+      <a class="btn btn--primary" routerLink="/incidents/new">Registrar incidencia</a>
+      <button type="button" class="btn" [disabled]="isRestoreDisabled()" (click)="restoreIncidents()">
+        Restaurar lista
+      </button>
+    </div>
   </header>
-
-  <app-incident-form (submitted)="onIncidentSubmitted($event)" />
 
   <!-- Indicadores derivados: ninguno se guarda, todos son computed sobre la
        colección del servicio. -->
@@ -34,24 +29,14 @@
   <div class="filters" role="search">
     <div class="filters-field">
       <label class="filters-label" for="search-term">Buscar</label>
-      <input
-        class="filters-control"
-        id="search-term"
-        type="search"
-        placeholder="Título o descripción"
-        [value]="searchTerm()"
-        (input)="onSearchTermChange($any($event.target).value)"
-      />
+      <input class="filters-control" id="search-term" type="search" placeholder="Título o descripción"
+        [value]="searchTerm()" (input)="onSearchTermChange($any($event.target).value)" />
     </div>
 
     <div class="filters-field">
       <label class="filters-label" for="status-filter">Estado</label>
-      <select
-        class="filters-control"
-        id="status-filter"
-        [value]="statusFilter()"
-        (change)="onStatusFilterChange($any($event.target).value)"
-      >
+      <select class="filters-control" id="status-filter" [value]="statusFilter()"
+        (change)="onStatusFilterChange($any($event.target).value)">
         <option value="">Todos</option>
         <option value="OPEN">Abierta</option>
         <option value="IN_PROGRESS">En progreso</option>
@@ -62,12 +47,8 @@
 
     <div class="filters-field">
       <label class="filters-label" for="priority-filter">Prioridad</label>
-      <select
-        class="filters-control"
-        id="priority-filter"
-        [value]="priorityFilter()"
-        (change)="onPriorityFilterChange($any($event.target).value)"
-      >
+      <select class="filters-control" id="priority-filter" [value]="priorityFilter()"
+        (change)="onPriorityFilterChange($any($event.target).value)">
         <option value="">Todas</option>
         <option value="LOW">Baja</option>
         <option value="MEDIUM">Media</option>
@@ -85,37 +66,30 @@
     Mostrando {{ visibleCount() }} de {{ totalCount() }} incidencias.
   </p>
 
-  <p
-    class="incident-list-selection"
-    aria-live="polite"
-    [appIncidentHighlight]="selectedIncident()?.priority"
-  >
+  <p class="incident-list-selection" aria-live="polite" [appIncidentHighlight]="selectedIncident()?.priority">
     @if (selectedIncident(); as incident) {
-      Incidencia seleccionada: <strong>{{ incident.title }}</strong>
-      ({{ incident.id | uppercase }} · prioridad {{ incident.priority | incidentPriority }})
+    Incidencia seleccionada: <strong>{{ incident.title }}</strong>
+    ({{ incident.id | uppercase }} · prioridad {{ incident.priority | incidentPriority }})
     } @else {
-      <span class="incident-list-selection--empty">Ninguna incidencia seleccionada.</span>
+    <span class="incident-list-selection--empty">Ninguna incidencia seleccionada.</span>
     }
   </p>
 
   <ul class="incident-list-grid">
     @for (incident of visibleIncidents(); track incident.id) {
-      <li class="incident-list-item">
-        <app-incident-card
-          [incident]="incident"
-          [selected]="incident.id === selectedId()"
-          (incidentSelected)="onIncidentSelected($event)"
-          (deleteRequested)="onDeleteRequested($event)"
-        />
-      </li>
+    <li class="incident-list-item">
+      <app-incident-card [incident]="incident" [detailLink]="['/incidents', incident.id]"
+        [selected]="incident.id === selectedId()" (incidentSelected)="onIncidentSelected($event)"
+        (deleteRequested)="onDeleteRequested($event)" />
+    </li>
     } @empty {
-      <li class="incident-list-empty">
-        @if (hasActiveFilters()) {
-          Ninguna incidencia coincide con los filtros aplicados.
-        } @else {
-          No hay incidencias registradas.
-        }
-      </li>
+    <li class="incident-list-empty">
+      @if (hasActiveFilters()) {
+      Ninguna incidencia coincide con los filtros aplicados.
+      } @else {
+      No hay incidencias registradas.
+      }
+    </li>
     }
   </ul>
 </section>
