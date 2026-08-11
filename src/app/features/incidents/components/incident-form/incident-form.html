@@ -139,7 +139,7 @@
 
   <div class="incident-form-actions">
     <button type="submit" class="btn btn--primary" [disabled]="form.invalid">
-      Registrar incidencia
+      {{ submitLabel() }}
     </button>
     <button type="button" class="btn" (click)="resetForm()">Limpiar</button>
   </div>

@@ -34,8 +34,6 @@ describe('FocusWithin', () => {
   });
 
   it('marca el elemento cuando el foco entra con teclado', () => {
-    // `.focus()` es exactamente lo que hace el navegador al tabular:
-    // dispara un focusin real que se propaga hasta el host.
     element('inside-a').focus();
     fixture.detectChanges();
 

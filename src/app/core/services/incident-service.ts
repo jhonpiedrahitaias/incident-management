@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Incident, IncidentDraft } from '../models/incident.model';
+import { Incident, IncidentChanges, IncidentDraft } from '../models/incident.model';
 import { IncidentSearchCriteria } from '../models/incident-search-criteria.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 
@@ -71,5 +71,27 @@ export class IncidentService {
     }, 0);
 
     return `inc-${String(highest + 1).padStart(3, '0')}`;
+  }
+
+    update(id: string, changes: IncidentChanges): Incident | undefined {
+    const current = this.getById(id);
+
+    if (!current) {
+      return undefined;
+    }
+
+    const updated: Incident = {
+      ...current,
+      ...changes,
+      id: current.id,
+      createdAt: current.createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.collection.update((incidents) =>
+      incidents.map((incident) => (incident.id === id ? updated : incident)),
+    );
+
+    return updated;
   }
 }
