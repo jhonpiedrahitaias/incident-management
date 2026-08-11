@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -26,6 +34,7 @@ interface IncidentFormControls {
 }
 
 export const FORBIDDEN_TITLE_WORDS = ['test', 'prueba', 'pruebas', 'asdf', 'xxx'] as const;
+
 export const MAX_TAGS = 5;
 
 @Component({
@@ -37,7 +46,11 @@ export const MAX_TAGS = 5;
 })
 export class IncidentForm {
   private readonly formBuilder = inject(FormBuilder);
+
   protected readonly maxTags = MAX_TAGS;
+
+  readonly initialValue = input<IncidentFormValue | null>(null);
+  readonly submitLabel = input('Registrar incidencia');
   readonly submitted = output<IncidentFormValue>();
 
   protected readonly form: FormGroup<IncidentFormControls> = this.formBuilder.group({
@@ -70,6 +83,31 @@ export class IncidentForm {
 
   protected readonly submitAttempted = signal(false);
   protected readonly lastRegisteredTitle = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const value = this.initialValue();
+
+      if (value) {
+        this.applyValue(value);
+      }
+    });
+  }
+
+  private applyValue(value: IncidentFormValue): void {
+    this.form.patchValue({
+      title: value.title,
+      description: value.description,
+      category: value.category,
+      priority: value.priority,
+    });
+
+    this.tags.clear();
+    for (const tag of value.tags ?? []) {
+      this.addTag();
+      this.tags.at(this.tags.length - 1).setValue(tag);
+    }
+  }
 
   protected get tags(): FormArray<FormControl<string>> {
     return this.form.controls.tags;
@@ -110,6 +148,7 @@ export class IncidentForm {
     return '';
   }
 
+
   protected onSubmit(): void {
     this.submitAttempted.set(true);
     this.lastRegisteredTitle.set(null);
@@ -129,8 +168,10 @@ export class IncidentForm {
       tags: tags.map((tag) => tag.trim()),
     });
 
-    this.lastRegisteredTitle.set(title.trim());
-    this.resetForm();
+    if (!this.initialValue()) {
+      this.lastRegisteredTitle.set(title.trim());
+      this.resetForm();
+    }
   }
 
   protected resetForm(): void {
@@ -138,6 +179,7 @@ export class IncidentForm {
     this.tags.clear();
     this.submitAttempted.set(false);
   }
+
 
   protected showError(field: 'title' | 'description' | 'category' | 'priority'): boolean {
     const control = this.form.controls[field];

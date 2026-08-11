@@ -1,6 +1,6 @@
 export type IncidentStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-
 export type IncidentPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
 
 export interface Incident {
   readonly id: string;
@@ -20,3 +20,4 @@ export interface Incident {
 export type IncidentDraft = Omit<Incident, 'id' | 'status' | 'createdAt' | 'updatedAt'> & {
   readonly status?: IncidentStatus;
 };
+export type IncidentChanges = Partial<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>>;

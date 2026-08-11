@@ -61,8 +61,13 @@
     color: var(--color-text-muted);
   }
 
-  /* El enlace de volver no debe ocupar todo el ancho. */
   > .btn {
     align-self: flex-start;
+  }
+
+    &-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 }

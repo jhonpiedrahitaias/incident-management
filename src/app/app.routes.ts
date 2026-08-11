@@ -9,23 +9,7 @@ export const routes: Routes = [
   },
   {
     path: 'incidents',
-    title: 'Incidencias · Gestión de Incidencias',
-    loadComponent: () =>
-      import('./features/incidents/pages/incident-list/incident-list').then((m) => m.IncidentList),
-  },
-  {
-    path: 'incidents/new',
-    title: 'Nueva incidencia · Gestión de Incidencias',
-    loadComponent: () =>
-      import('./features/incidents/pages/incident-new/incident-new').then((m) => m.IncidentNew),
-  },
-  {
-    path: 'incidents/:id',
-    title: 'Detalle de incidencia · Gestión de Incidencias',
-    loadComponent: () =>
-      import('./features/incidents/pages/incident-detail/incident-detail').then(
-        (m) => m.IncidentDetail,
-      ),
+    loadChildren: () => import('./features/incidents/incidents.routes').then((m) => m.INCIDENT_ROUTES),
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {
