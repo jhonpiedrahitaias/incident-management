@@ -13,9 +13,9 @@
 
   @if (loading()) {
   <p class="loading" role="status">
-    <span class="loading__spinner" aria-hidden="true"></span>
+    <span class="loading-spinner" aria-hidden="true"></span>
     Guardando…
   </p>
   }
-  <app-incident-form (submitted)="onSubmitted($event)" />
+  <app-incident-form (submitted)="onSubmitted($event)" (cancelled)="onCancelled()" />
 </section>

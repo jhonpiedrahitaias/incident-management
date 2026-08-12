@@ -6,12 +6,16 @@
       <button type="button" class="btn" [disabled]="loading()" (click)="reload()">
         {{ loading() ? 'Cargando…' : 'Recargar' }}
       </button>
+      <label class="incident-list-auto-refresh" for="auto-refresh">
+        <input type="checkbox" id="auto-refresh" [checked]="autoRefresh()" (change)="toggleAutoRefresh()" />
+        Refresco automático
+      </label>
     </div>
   </header>
 
   @if (loading()) {
   <p class="loading" role="status">
-    <span class="loading__spinner" aria-hidden="true"></span>
+    <span class="loading-spinner" aria-hidden="true"></span>
     Cargando incidencias…
   </p>
   }
@@ -43,7 +47,17 @@
     <div class="filters-field">
       <label class="filters-label" for="search-term">Buscar</label>
       <input class="filters-control" id="search-term" type="search" placeholder="Título o descripción"
-        [value]="searchTerm()" (input)="onSearchTermChange($any($event.target).value)" />
+        [value]="searchTerm()" [attr.aria-busy]="searching()" aria-describedby="search-hint"
+        (input)="onSearchTermChange($any($event.target).value)" />
+      <span class="filters-hint" id="search-hint" aria-live="polite">
+        @if (searching()) {
+        Buscando…
+        } @else if (searchError(); as message) {
+        {{ message }}
+        } @else {
+        La búsqueda se consulta al servidor.
+        }
+      </span>
     </div>
 
     <div class="filters-field">

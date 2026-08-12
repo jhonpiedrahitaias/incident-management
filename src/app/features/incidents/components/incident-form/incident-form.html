@@ -141,7 +141,12 @@
     <button type="submit" class="btn btn--primary" [disabled]="form.invalid">
       {{ submitLabel() }}
     </button>
-    <button type="button" class="btn" (click)="resetForm()">Limpiar</button>
+    <button type="button" class="btn" (click)="resetForm()">
+      {{ initialValue() ? 'Restablecer' : 'Limpiar' }}
+    </button>
+    <button type="button" class="btn incident-form-cancel" (click)="onCancel()">
+      Cancelar
+    </button>
   </div>
 
   <p class="incident-form-success" role="status">

@@ -1,18 +1,29 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { UpperCasePipe } from '@angular/common';
-import {
-  Incident,
-  IncidentPriority,
-  IncidentStatus,
-} from '../../../../core/models/incident.model';
-import { IncidentSearchCriteria } from '../../../../core/models/incident-search-criteria.model';
 import { RouterLink } from '@angular/router';
+import {
+  EMPTY,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  interval,
+  map,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
+import { Incident, IncidentPriority, IncidentStatus } from '../../../../core/models/incident.model';
+import { IncidentApi } from '../../../../core/api/incident-api';
 import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
 import { IncidentCard } from '../../components/incident-card/incident-card.component';
 
 const ANY = '';
+const SEARCH_DEBOUNCE_MS = 300;
+const AUTO_REFRESH_MS = 30_000;
 
 @Component({
   selector: 'app-incident-list',
@@ -22,31 +33,77 @@ const ANY = '';
 })
 export class IncidentList {
   private readonly incidentService = inject(IncidentService);
+  private readonly incidentApi = inject(IncidentApi);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly incidents = this.incidentService.incidents;
   protected readonly totalCount = this.incidentService.totalCount;
   protected readonly criticalCount = this.incidentService.criticalCount;
   protected readonly openCount = this.incidentService.openCount;
-  protected readonly searchTerm = signal('');
-  protected readonly statusFilter = signal<IncidentStatus | typeof ANY>(ANY);
-  protected readonly priorityFilter = signal<IncidentPriority | typeof ANY>(ANY);
-  protected readonly selectedId = signal<string | null>(null);
   protected readonly loading = this.incidentService.loading;
   protected readonly error = this.incidentService.error;
   protected readonly loaded = this.incidentService.loaded;
 
-  protected readonly criteria = computed(
-    () =>
-      new IncidentSearchCriteria(
-        this.searchTerm(),
-        this.statusFilter() || undefined,
-        this.priorityFilter() || undefined,
+  protected readonly searchTerm = signal('');
+  protected readonly statusFilter = signal<IncidentStatus | typeof ANY>(ANY);
+  protected readonly priorityFilter = signal<IncidentPriority | typeof ANY>(ANY);
+  protected readonly selectedId = signal<string | null>(null);
+
+  /** true mientras hay una búsqueda en vuelo. */
+  protected readonly searching = signal(false);
+
+  /** Mensaje si la búsqueda falla. No rompe el flujo: se sigue pudiendo buscar. */
+  protected readonly searchError = signal<string | null>(null);
+
+  // --- Búsqueda reactiva ---------------------------------------------------
+
+  /**
+   * Resultados que devuelve el servidor para el término actual.
+   *
+   * El flujo va de señal a señal pasando por RxJS: `toObservable` convierte
+   * la caja de texto en un flujo de valores, los operadores lo domestican y
+   * `toSignal` devuelve el resultado al mundo de las señales, sin ninguna
+   * suscripción manual que haya que cancelar después.
+   */
+  private readonly searchResults = toSignal(
+    toObservable(this.searchTerm).pipe(
+      debounceTime(SEARCH_DEBOUNCE_MS),
+      map((term) => term.trim()),
+      distinctUntilChanged(),
+      filter((term) => term !== ''),
+      tap(() => {
+        this.searching.set(true);
+        this.searchError.set(null);
+      }),
+      switchMap((term) =>
+        this.incidentApi.search(term).pipe(
+          catchError((failure: Error) => {
+            this.searchError.set(failure.message);
+            return of<Incident[]>([]);
+          }),
+        ),
       ),
+      tap(() => this.searching.set(false)),
+    ),
+    { initialValue: [] as Incident[] },
   );
 
   protected readonly visibleIncidents = computed(() => {
-    const criteria = this.criteria();
-    return this.incidents().filter((incident) => criteria.matches(incident));
+    const term = this.searchTerm().trim();
+    const status = this.statusFilter();
+    const priority = this.priorityFilter();
+
+    // Sin término no hace falta preguntar: se parte de lo ya cargado. Con
+    // término, de lo que respondió el servidor.
+    const base = term ? this.searchResults() : this.incidents();
+    const alive = new Set(this.incidents().map((incident) => incident.id));
+
+    return base.filter(
+      (incident) =>
+        alive.has(incident.id) &&
+        (status === ANY || incident.status === status) &&
+        (priority === ANY || incident.priority === priority),
+    );
   });
 
   protected readonly visibleCount = computed(() => this.visibleIncidents().length);
@@ -61,6 +118,55 @@ export class IncidentList {
   protected readonly selectedIncident = computed(() =>
     this.incidents().find((incident) => incident.id === this.selectedId()),
   );
+
+  // --- Ciclo de vida -------------------------------------------------------
+
+  /** Refresco automático. Apagado por defecto: lo activa el usuario. */
+  protected readonly autoRefresh = signal(false);
+
+  constructor() {
+    this.startAutoRefresh();
+    this.reloadWhenBackOnline();
+  }
+
+  /**
+   * Temporizador controlado.
+   *
+   * El `interval` **solo existe mientras el refresco está activo**: al
+   * apagarlo, `switchMap` cancela el temporizador en vez de dejarlo
+   * corriendo con las emisiones ignoradas. Y `takeUntilDestroyed` lo corta
+   * al destruirse el componente, sin necesidad de `ngOnDestroy`.
+   */
+  private startAutoRefresh(): void {
+    toObservable(this.autoRefresh)
+      .pipe(
+        switchMap((enabled) => (enabled ? interval(AUTO_REFRESH_MS) : EMPTY)),
+        // No se pisa a sí mismo si una recarga anterior sigue en vuelo.
+        filter(() => !this.incidentService.loading()),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.incidentService.load());
+  }
+
+  /**
+   * Listener del navegador: al recuperar la conexión, se recarga.
+   *
+   * `addEventListener` no lo limpia Angular, así que la baja se registra a
+   * mano en `DestroyRef.onDestroy`. Sin eso, el listener sobreviviría al
+   * componente y llamaría al servicio para siempre.
+   */
+  private reloadWhenBackOnline(): void {
+    const onOnline = () => this.incidentService.load();
+
+    window.addEventListener('online', onOnline);
+    this.destroyRef.onDestroy(() => window.removeEventListener('online', onOnline));
+  }
+
+  // --- Acciones ------------------------------------------------------------
+
+  protected toggleAutoRefresh(): void {
+    this.autoRefresh.update((enabled) => !enabled);
+  }
 
   protected onSearchTermChange(value: string): void {
     this.searchTerm.set(value);
@@ -85,11 +191,11 @@ export class IncidentList {
   }
 
   protected onDeleteRequested(incident: Incident): void {
-    this.incidentService.remove(incident.id).subscribe({ error: () => undefined });
-  }
-
-  protected restoreIncidents(): void {
-    this.incidentService.load();
+    this.incidentService
+      .remove(incident.id)
+      // Fuera de un contexto de inyección hay que pasarle el DestroyRef.
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ error: () => undefined });
   }
 
   protected reload(): void {

@@ -52,6 +52,7 @@ export class IncidentForm {
   readonly initialValue = input<IncidentFormValue | null>(null);
   readonly submitLabel = input('Registrar incidencia');
   readonly submitted = output<IncidentFormValue>();
+  readonly cancelled = output<void>();
 
   protected readonly form: FormGroup<IncidentFormControls> = this.formBuilder.group({
     title: this.formBuilder.control('', {
@@ -178,6 +179,15 @@ export class IncidentForm {
     this.form.reset();
     this.tags.clear();
     this.submitAttempted.set(false);
+
+    const initial = this.initialValue();
+    if (initial) {
+      this.applyValue(initial);
+    }
+  }
+
+  protected onCancel(): void {
+    this.cancelled.emit();
   }
 
 
