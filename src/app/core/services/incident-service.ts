@@ -1,16 +1,25 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, finalize, tap } from 'rxjs';
 import { Incident, IncidentChanges, IncidentDraft } from '../models/incident.model';
 import { IncidentSearchCriteria } from '../models/incident-search-criteria.model';
-import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
+import { IncidentApi } from '../api/incident-api';
 
 
 @Injectable({
   providedIn: 'root',
 })
 export class IncidentService {
-  readonly totalCount = computed(() => this.collection().length);
-  private readonly collection = signal<readonly Incident[]>(MOCK_INCIDENTS);
+  private readonly api = inject(IncidentApi);
+  private readonly collection = signal<readonly Incident[]>([]);
+  private readonly pendingRequests = signal(0);
+  private readonly lastError = signal<string | null>(null);
+  private readonly initialized = signal(false);
   readonly incidents = this.collection.asReadonly();
+  readonly error = this.lastError.asReadonly();
+  readonly loading = computed(() => this.pendingRequests() > 0);
+  readonly loaded = this.initialized.asReadonly();
+
+  readonly totalCount = computed(() => this.collection().length);
 
   readonly criticalCount = computed(
     () => this.collection().filter((incident) => incident.priority === 'CRITICAL').length,
@@ -19,6 +28,20 @@ export class IncidentService {
   readonly openCount = computed(
     () => this.collection().filter((incident) => incident.status === 'OPEN').length,
   );
+
+  constructor() {
+    this.load();
+  }
+
+  load(): void {
+    this.request(this.api.getAll()).subscribe({
+      next: (incidents) => {
+        this.collection.set(incidents);
+        this.initialized.set(true);
+      },
+      error: () => this.initialized.set(true),
+    });
+  }
 
   getAll(): readonly Incident[] {
     return [...this.collection()];
@@ -32,7 +55,7 @@ export class IncidentService {
     return this.collection().filter((incident) => criteria.matches(incident));
   }
 
-  create(draft: IncidentDraft): Incident {
+  create(draft: IncidentDraft): Observable<Incident> {
     const now = new Date().toISOString();
     const incident: Incident = {
       ...draft,
@@ -42,42 +65,16 @@ export class IncidentService {
       updatedAt: now,
     };
 
-    this.collection.update((current) => [...current, incident]);
-    return incident;
+    return this.request(this.api.create(incident)).pipe(
+      tap((created) => this.collection.update((current) => [...current, created])),
+    );
   }
 
-  remove(id: string): boolean {
-    const existed = this.collection().some((incident) => incident.id === id);
-
-    if (existed) {
-      this.collection.update((current) => current.filter((incident) => incident.id !== id));
-    }
-
-    return existed;
-  }
-
-  reset(): void {
-    this.collection.set(MOCK_INCIDENTS);
-  }
-
-  isPristine(): boolean {
-    return this.collection() === MOCK_INCIDENTS;
-  }
-
-  private nextId(): string {
-    const highest = this.collection().reduce((max, incident) => {
-      const value = Number.parseInt(incident.id.replace(/\D/g, ''), 10);
-      return Number.isNaN(value) ? max : Math.max(max, value);
-    }, 0);
-
-    return `inc-${String(highest + 1).padStart(3, '0')}`;
-  }
-
-    update(id: string, changes: IncidentChanges): Incident | undefined {
+  update(id: string, changes: IncidentChanges): Observable<Incident> {
     const current = this.getById(id);
 
     if (!current) {
-      return undefined;
+      return this.request(this.api.getById(id)) as Observable<Incident>;
     }
 
     const updated: Incident = {
@@ -88,10 +85,45 @@ export class IncidentService {
       updatedAt: new Date().toISOString(),
     };
 
-    this.collection.update((incidents) =>
-      incidents.map((incident) => (incident.id === id ? updated : incident)),
+    return this.request(this.api.update(updated)).pipe(
+      tap((saved) =>
+        this.collection.update((incidents) =>
+          incidents.map((incident) => (incident.id === id ? saved : incident)),
+        ),
+      ),
     );
+  }
 
-    return updated;
+  remove(id: string): Observable<void> {
+    return this.request(this.api.remove(id)).pipe(
+      tap(() =>
+        this.collection.update((current) => current.filter((incident) => incident.id !== id)),
+      ),
+    );
+  }
+
+  clearError(): void {
+    this.lastError.set(null);
+  }
+
+  private request<T>(source: Observable<T>): Observable<T> {
+    this.pendingRequests.update((count) => count + 1);
+    this.lastError.set(null);
+
+    return source.pipe(
+      tap({
+        error: (error: Error) => this.lastError.set(error.message),
+      }),
+      finalize(() => this.pendingRequests.update((count) => count - 1)),
+    );
+  }
+
+  private nextId(): string {
+    const highest = this.collection().reduce((max, incident) => {
+      const value = Number.parseInt(incident.id.replace(/\D/g, ''), 10);
+      return Number.isNaN(value) ? max : Math.max(max, value);
+    }, 0);
+
+    return `inc-${String(highest + 1).padStart(3, '0')}`;
   }
 }

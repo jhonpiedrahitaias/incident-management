@@ -31,6 +31,9 @@ export class IncidentList {
   protected readonly statusFilter = signal<IncidentStatus | typeof ANY>(ANY);
   protected readonly priorityFilter = signal<IncidentPriority | typeof ANY>(ANY);
   protected readonly selectedId = signal<string | null>(null);
+  protected readonly loading = this.incidentService.loading;
+  protected readonly error = this.incidentService.error;
+  protected readonly loaded = this.incidentService.loaded;
 
   protected readonly criteria = computed(
     () =>
@@ -59,8 +62,6 @@ export class IncidentList {
     this.incidents().find((incident) => incident.id === this.selectedId()),
   );
 
-  protected readonly isRestoreDisabled = computed(() => this.incidentService.isPristine());
-
   protected onSearchTermChange(value: string): void {
     this.searchTerm.set(value);
   }
@@ -84,10 +85,14 @@ export class IncidentList {
   }
 
   protected onDeleteRequested(incident: Incident): void {
-    this.incidentService.remove(incident.id);
+    this.incidentService.remove(incident.id).subscribe({ error: () => undefined });
   }
 
   protected restoreIncidents(): void {
-    this.incidentService.reset();
+    this.incidentService.load();
+  }
+
+  protected reload(): void {
+    this.incidentService.load();
   }
 }
