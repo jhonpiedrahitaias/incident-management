@@ -21,7 +21,7 @@
   </p>
   }
 
-  <app-incident-form [initialValue]="initialValue()" submitLabel="Guardar cambios" (submitted)="onSubmitted($event)" />
+  <app-incident-form [initialValue]="initialValue()" submitLabel="Guardar cambios" (submitted)="onSubmitted($event)" (cancelled)="onCancelled()" />
 </section>
 } @else {
 <section class="incident-edit">

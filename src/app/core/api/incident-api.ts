@@ -1,6 +1,6 @@
 //IA
 
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { Incident } from '../models/incident.model';
@@ -28,6 +28,13 @@ export class IncidentApi {
   /** `GET /api/incidents/:id` */
   getById(id: string): Observable<Incident> {
     return this.http.get<Incident>(`${BASE_URL}/${id}`).pipe(catchError(toReadableError));
+  }
+
+  search(term: string): Observable<Incident[]> {
+    const trimmed = term.trim();
+    const params = trimmed ? new HttpParams().set('search', trimmed) : new HttpParams();
+
+    return this.http.get<Incident[]>(BASE_URL, { params }).pipe(catchError(toReadableError));
   }
 
   /** `POST /api/incidents` */
