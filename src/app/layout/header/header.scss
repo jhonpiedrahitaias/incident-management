@@ -16,7 +16,6 @@
     max-width: var(--layout-max-width);
     margin-inline: auto;
 
-    /* A partir de tablet la barra pasa a una sola fila. */
     @include bp.respond-from(sm) {
       flex-direction: row;
       flex-wrap: wrap;
@@ -28,8 +27,6 @@
   &-title {
     margin: 0;
     font-size: var(--font-size-lg);
-
-    /* Un título largo se parte en vez de forzar scroll horizontal. */
     overflow-wrap: anywhere;
   }
 
@@ -93,8 +90,6 @@
     color: var(--color-header-text-muted);
   }
 
-  /* El anillo de foco global es azul oscuro; sobre la barra oscura se
-     cambia a blanco para que siga siendo visible. */
   :focus-visible {
     outline-color: var(--color-header-text);
   }

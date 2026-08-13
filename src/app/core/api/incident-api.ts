@@ -22,57 +22,33 @@ export class IncidentApi {
 
   /** `GET /api/incidents` */
   getAll(): Observable<Incident[]> {
-    return this.http.get<Incident[]>(BASE_URL).pipe(catchError(toReadableError));
+    return this.http.get<Incident[]>(BASE_URL);
   }
 
   /** `GET /api/incidents/:id` */
   getById(id: string): Observable<Incident> {
-    return this.http.get<Incident>(`${BASE_URL}/${id}`).pipe(catchError(toReadableError));
+    return this.http.get<Incident>(`${BASE_URL}/${id}`);
   }
 
   search(term: string): Observable<Incident[]> {
     const trimmed = term.trim();
     const params = trimmed ? new HttpParams().set('search', trimmed) : new HttpParams();
 
-    return this.http.get<Incident[]>(BASE_URL, { params }).pipe(catchError(toReadableError));
+    return this.http.get<Incident[]>(BASE_URL, { params });
   }
 
   /** `POST /api/incidents` */
   create(incident: Incident): Observable<Incident> {
-    return this.http.post<Incident>(BASE_URL, incident).pipe(catchError(toReadableError));
+    return this.http.post<Incident>(BASE_URL, incident);
   }
 
   /** `PUT /api/incidents/:id` */
   update(incident: Incident): Observable<Incident> {
-    return this.http
-      .put<Incident>(`${BASE_URL}/${incident.id}`, incident)
-      .pipe(catchError(toReadableError));
+    return this.http.put<Incident>(`${BASE_URL}/${incident.id}`, incident);
   }
 
   /** `DELETE /api/incidents/:id` */
   remove(id: string): Observable<void> {
-    return this.http.delete<void>(`${BASE_URL}/${id}`).pipe(catchError(toReadableError));
+     return this.http.delete<void>(`${BASE_URL}/${id}`);
   }
-}
-
-/**
- * Traduce el error HTTP a un mensaje que se le puede enseñar a una persona.
- *
- * Se hace aquí, en la frontera, para que ni el servicio ni los componentes
- * tengan que saber qué es un código 404 o un `HttpErrorResponse`.
- */
-function toReadableError(error: HttpErrorResponse): Observable<never> {
-  if (error.status === 0) {
-    return throwError(() => new Error('No hay conexión con el servidor.'));
-  }
-
-  const messages: Record<number, string> = {
-    404: 'La incidencia solicitada no existe.',
-    500: 'El servidor no pudo procesar la solicitud.',
-  };
-
-  const message =
-    error.error?.message ?? messages[error.status] ?? `Error inesperado (${error.status}).`;
-
-  return throwError(() => new Error(message));
 }
