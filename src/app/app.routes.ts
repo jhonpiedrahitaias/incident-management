@@ -1,15 +1,25 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
   {
+    // Única ruta pública: es a donde manda el guard cuando no hay sesión.
+    path: 'login',
+    title: 'Iniciar sesión · Gestión de Incidencias',
+    loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
+  },
+  {
     path: 'dashboard',
     title: 'Panel de control · Gestión de Incidencias',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
     path: 'incidents',
-    loadChildren: () => import('./features/incidents/incidents.routes').then((m) => m.INCIDENT_ROUTES),
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/incidents/incidents.routes').then((m) => m.INCIDENT_ROUTES),
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {

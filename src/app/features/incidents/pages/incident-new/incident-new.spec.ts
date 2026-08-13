@@ -1,12 +1,11 @@
 //IA
 
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { loadIncidents, prepareApi, provideTestApi } from '../../../../testing/api-testing';
 import { Router, provideRouter } from '@angular/router';
-
 import { IncidentNew } from './incident-new';
 import { IncidentService } from '../../../../core/services/incident-service';
 import { UserService } from '../../../../core/services/user-service';
-
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 describe('IncidentNew', () => {
   let component: IncidentNew;
   let fixture: ComponentFixture<IncidentNew>;
@@ -64,6 +63,23 @@ describe('IncidentNew', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
+  it('cancelar vuelve al listado sin registrar nada', fakeAsync(() => {
+    const before = service.getAll().length;
+
+    clickButton('Cancelar');
+
+    expect(router.navigate).toHaveBeenCalledWith(['/incidents']);
+    expect(service.getAll().length).toBe(before);
+  }));
+
+  function clickButton(label: string): void {
+    Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === label)!
+      .click();
+    tick();
+    fixture.detectChanges();
+  }
+
   function submitValidForm(): void {
     setValue('#incident-title', 'Fuga en el aire acondicionado', 'input');
     setValue('#incident-description', 'Gotea sobre los equipos del rack.', 'input');
@@ -82,15 +98,3 @@ describe('IncidentNew', () => {
     fixture.detectChanges();
   }
 });
-
-function provideTestApi(): any {
-  throw new Error('Function not implemented.');
-}
-function loadIncidents(): IncidentService {
-  throw new Error('Function not implemented.');
-}
-
-function prepareApi() {
-  throw new Error('Function not implemented.');
-}
-

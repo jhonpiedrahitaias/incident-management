@@ -3,6 +3,7 @@ import { Observable, finalize, tap } from 'rxjs';
 import { Incident, IncidentChanges, IncidentDraft } from '../models/incident.model';
 import { IncidentSearchCriteria } from '../models/incident-search-criteria.model';
 import { IncidentApi } from '../api/incident-api';
+import { LoadingService } from './loading-service';
 
 
 @Injectable({
@@ -11,12 +12,12 @@ import { IncidentApi } from '../api/incident-api';
 export class IncidentService {
   private readonly api = inject(IncidentApi);
   private readonly collection = signal<readonly Incident[]>([]);
-  private readonly pendingRequests = signal(0);
+  private readonly loadingService = inject(LoadingService);
   private readonly lastError = signal<string | null>(null);
   private readonly initialized = signal(false);
   readonly incidents = this.collection.asReadonly();
   readonly error = this.lastError.asReadonly();
-  readonly loading = computed(() => this.pendingRequests() > 0);
+  readonly loading = this.loadingService.loading;
   readonly loaded = this.initialized.asReadonly();
 
   readonly totalCount = computed(() => this.collection().length);
@@ -107,14 +108,12 @@ export class IncidentService {
   }
 
   private request<T>(source: Observable<T>): Observable<T> {
-    this.pendingRequests.update((count) => count + 1);
     this.lastError.set(null);
 
     return source.pipe(
       tap({
         error: (error: Error) => this.lastError.set(error.message),
-      }),
-      finalize(() => this.pendingRequests.update((count) => count - 1)),
+      })
     );
   }
 

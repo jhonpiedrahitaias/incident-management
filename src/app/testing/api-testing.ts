@@ -1,11 +1,13 @@
+//IA
 import { EnvironmentProviders } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TestBed, tick } from '@angular/core/testing';
-import {
-  fakeBackendInterceptor,
-  resetFakeBackend,
-  setFakeBackendLatency,
-} from '../core/api/fake-backend-interceptor';
+import { AuthService } from '../core/services/auth-service';
+import { fakeBackendInterceptor, DEMO_PASSWORD, resetFakeBackend, setFakeBackendLatency } from '../core/api/fake-backend-interceptor';
+import { authTokenInterceptor } from '../core/http/auth-token-interceptor';
+import { correlationIdInterceptor } from '../core/http/correlation-id-interceptor';
+import { errorHandlingInterceptor } from '../core/http/error-handling-interceptor';
+import { loadingInterceptor } from '../core/http/loading-interceptor';
 import { IncidentService } from '../core/services/incident-service';
 
 /**
@@ -16,9 +18,36 @@ import { IncidentService } from '../core/services/incident-service';
  * lugar de sustituir la capa HTTP por un doble.
  */
 
-/** Proveedores de HTTP con el backend simulado. */
+/**
+ * Proveedores de HTTP con la **misma cadena de interceptores** que usa la
+ * aplicación, para que las pruebas recorran el camino real: correlación,
+ * contabilidad de carga y traducción de errores incluidas.
+ */
 export function provideTestApi(): EnvironmentProviders {
-  return provideHttpClient(withInterceptors([fakeBackendInterceptor]));
+  return provideHttpClient(
+    withInterceptors([
+      correlationIdInterceptor,
+      authTokenInterceptor,
+      loadingInterceptor,
+      errorHandlingInterceptor,
+      fakeBackendInterceptor,
+    ]),
+  );
+}
+
+/** Credenciales válidas del backend simulado. */
+export const TEST_CREDENTIALS = {
+  email: 'ana.torres@example.com',
+  password: DEMO_PASSWORD,
+};
+
+/**
+ * Inicia sesión y espera a la respuesta.
+ * Solo se puede llamar dentro de `fakeAsync`.
+ */
+export function loginForTest(): void {
+  TestBed.inject(AuthService).login(TEST_CREDENTIALS).subscribe();
+  tick();
 }
 
 /**
@@ -29,6 +58,9 @@ export function provideTestApi(): EnvironmentProviders {
 export function prepareApi(): void {
   resetFakeBackend();
   setFakeBackendLatency(0);
+  // La sesión persiste en sessionStorage: sin esto, una prueba arrastraría
+  // la sesión de la anterior.
+  sessionStorage.clear();
 }
 
 /**
