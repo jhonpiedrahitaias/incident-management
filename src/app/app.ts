@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Header } from './layout/header/header';
-import { Footer } from './layout/footer/footer';
+import { Header } from './features/layout/header/header';
+import { Footer } from './features/layout/footer/footer';
 import { LoadingService } from './core/services/loading-service';
 
 @Component({

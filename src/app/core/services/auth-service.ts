@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse, Credentials, Session } from '../models/auth.model';
-import { User } from '../models/user.model';
+import { User, UserRole } from '../models/user.model';
 
 const STORAGE_KEY = 'incident-management.session';
 
@@ -16,7 +16,14 @@ export class AuthService {
   readonly currentUser = computed<User | null>(() => this.session()?.user ?? null);
   readonly token = computed<string | null>(() => this.session()?.token ?? null);
   readonly isAuthenticated = computed(() => this.session() !== null);
+  readonly role = computed<UserRole | null>(() => this.session()?.user.role ?? null);
+  readonly canManageIncidents = computed(() => this.hasAnyRole('ADMIN', 'AGENT'));
+  readonly canAdminister = computed(() => this.hasAnyRole('ADMIN'));
 
+  hasAnyRole(...roles: readonly UserRole[]): boolean {
+    const current = this.role();
+    return current !== null && roles.includes(current);
+  }
 
   login(credentials: Credentials): Observable<AuthResponse> {
     return this.http

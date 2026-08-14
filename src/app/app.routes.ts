@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { roleGuard } from './core/guards/role-guard';
 
 export const routes: Routes = [
   {
@@ -20,6 +21,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () =>
       import('./features/incidents/incidents.routes').then((m) => m.INCIDENT_ROUTES),
+  },
+    {
+    path: 'admin',
+    title: 'Administración · Gestión de Incidencias',
+    canActivate: [authGuard, roleGuard('ADMIN')],
+    loadComponent: () =>
+      import('./features/admin/pages/admin-users/admin-users').then((m) => m.AdminUsers),
+  },
+  {
+    path: 'forbidden',
+    title: 'Acceso denegado · Gestión de Incidencias',
+    loadComponent: () => import('./shared/pages/forbidden/forbidden').then((m) => m.Forbidden),
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {

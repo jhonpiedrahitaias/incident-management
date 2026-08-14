@@ -6,6 +6,8 @@ import { UserService } from '../../../../core/services/user-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
+import { AuthService } from '../../../../core/services/auth-service';
+import { IncidentStore } from '../../../../core/state/incident-store';
 
 @Component({
   selector: 'app-incident-detail',
@@ -21,11 +23,12 @@ import { IncidentHighlight } from '../../../../shared/directives/incident-highli
   styleUrl: './incident-detail.scss',
 })
 export class IncidentDetail {
-  private readonly incidentService = inject(IncidentService);
+  private readonly store = inject(IncidentStore);
   private readonly userService = inject(UserService);
   readonly id = input.required<string>();
-  protected readonly incident = computed(() => this.incidentService.getById(this.id()));
-
+  protected readonly incident = computed(() => this.store.getById(this.id()));
+  protected readonly canManageIncidents = inject(AuthService).canManageIncidents;
+  
   protected readonly reporterName = computed(() => {
     const reporterId = this.incident()?.reporterId;
     return reporterId ? (this.userService.getById(reporterId)?.name ?? reporterId) : '';

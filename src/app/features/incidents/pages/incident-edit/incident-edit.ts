@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentForm, IncidentFormValue } from '../../components/incident-form/incident-form';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { IncidentStore } from '../../../../core/state/incident-store';
 
 @Component({
   selector: 'app-incident-edit',
@@ -11,14 +12,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   styleUrl: './incident-edit.scss',
 })
 export class IncidentEdit {
-  private readonly incidentService = inject(IncidentService);
+  private readonly store = inject(IncidentStore);
   private readonly router = inject(Router);
   readonly id = input.required<string>();
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly incident = computed(() => this.incidentService.getById(this.id()));
-  protected readonly loading = this.incidentService.loading;
-  protected readonly error = this.incidentService.error;
-  
+  protected readonly incident = computed(() => this.store.getById(this.id()));
+  protected readonly loading = this.store.loading;
+  protected readonly error = this.store.error;
+
   protected readonly initialValue = computed<IncidentFormValue | null>(() => {
     const incident = this.incident();
 
@@ -37,11 +38,11 @@ export class IncidentEdit {
 
 
   protected onSubmitted(value: IncidentFormValue): void {
-    this.incidentService.update(this.id(), value).subscribe({
+    this.store.update(this.id(), value).subscribe({
       next: () => this.router.navigate(['/incidents', this.id()]),
       error: () => undefined,
     });
-    this.incidentService
+    this.store
       .update(this.id(), value)
       // Igual que en el alta: sin esto se navegaría desde un componente ya
       // destruido si el usuario se marcha mientras se guarda.
