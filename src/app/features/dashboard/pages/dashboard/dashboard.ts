@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
+import { IncidentStore } from '../../../../core/state/incident-store';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,13 +12,13 @@ import { IncidentHighlight } from '../../../../shared/directives/incident-highli
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
-  private readonly incidentService = inject(IncidentService);
+  private readonly store = inject(IncidentStore);
 
-  protected readonly totalCount = this.incidentService.totalCount;
-  protected readonly criticalCount = this.incidentService.criticalCount;
-  protected readonly openCount = this.incidentService.openCount;
+  protected readonly totalCount = this.store.totalCount;
+  protected readonly criticalCount = this.store.criticalCount;
+  protected readonly openCount = this.store.openCount;
 
   protected readonly criticalIncidents = computed(() =>
-    this.incidentService.incidents().filter((incident) => incident.priority === 'CRITICAL'),
+    this.store.incidents().filter((incident) => incident.priority === 'CRITICAL'),
   );
 }

@@ -1,7 +1,7 @@
 import { Component, Input, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../core/services/auth-service';
-import { FocusWithin } from '../../shared/directives/focus-within';
+import { AuthService } from '../../../core/services/auth-service';
+import { FocusWithin } from '../../../shared/directives/focus-within';
 
 @Component({
   selector: 'app-header',
@@ -18,8 +18,9 @@ export class Header {
   /** Usuario de la sesión, o `null` si no hay nadie dentro. */
   protected readonly currentUser = this.authService.currentUser;
   protected readonly isAuthenticated = this.authService.isAuthenticated;
-
   protected readonly showUserDetails = signal(true);
+  protected readonly canManageIncidents = this.authService.canManageIncidents;
+  protected readonly canAdminister = this.authService.canAdminister;
 
   toggleUserDetails(): void {
     this.showUserDetails.update((visible) => !visible);
