@@ -1,0 +1,8 @@
+<div class="empty-state">
+  <p class="empty-state-message">{{ message() }}</p>
+
+  @if (hint()) {
+    <p class="empty-state-hint">{{ hint() }}</p>
+  }
+  <ng-content />
+</div>

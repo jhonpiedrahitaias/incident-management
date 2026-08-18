@@ -1,31 +1,33 @@
 <section class="incident-list" aria-labelledby="incident-list-title">
   <header class="incident-list-header">
     <h2 class="incident-list-title" id="incident-list-title">Incidencias registradas</h2>
+
     <div class="incident-list-header-actions">
       <a class="btn btn--primary" routerLink="/incidents/new">Registrar incidencia</a>
       <button type="button" class="btn" [disabled]="loading()" (click)="reload()">
         {{ loading() ? 'Cargando…' : 'Recargar' }}
       </button>
       <label class="incident-list-auto-refresh" for="auto-refresh">
-        <input type="checkbox" id="auto-refresh" [checked]="autoRefresh()" (change)="toggleAutoRefresh()" />
+        <input
+          type="checkbox"
+          id="auto-refresh"
+          [checked]="autoRefresh()"
+          (change)="toggleAutoRefresh()"
+        />
         Refresco automático
       </label>
     </div>
   </header>
-
   @if (loading()) {
-  <p class="loading" role="status">
-    <span class="loading-spinner" aria-hidden="true"></span>
-    Cargando incidencias…
-  </p>
+    <app-loading-indicator message="Cargando incidencias…" />
   }
 
   <!-- `role="alert"` sí interrumpe: un fallo merece la atención inmediata. -->
   @if (error(); as message) {
-  <p class="error-banner" role="alert">
-    {{ message }}
-    <button type="button" class="btn" (click)="reload()">Reintentar</button>
-  </p>
+    <p class="error-banner" role="alert">
+      {{ message }}
+      <button type="button" class="btn" (click)="reload()">Reintentar</button>
+    </p>
   }
 
   <ul class="stats" aria-label="Resumen de incidencias">
@@ -46,24 +48,35 @@
   <div class="filters" role="search">
     <div class="filters-field">
       <label class="filters-label" for="search-term">Buscar</label>
-      <input class="filters-control" id="search-term" type="search" placeholder="Título o descripción"
-        [value]="filters().search" [attr.aria-busy]="searching()" aria-describedby="search-hint"
-        (input)="onSearchTermChange($any($event.target).value)" />
+      <input
+        class="filters-control"
+        id="search-term"
+        type="search"
+        placeholder="Título o descripción"
+        [value]="filters().search"
+        [attr.aria-busy]="searching()"
+        aria-describedby="search-hint"
+        (input)="onSearchTermChange($any($event.target).value)"
+      />
       <span class="filters-hint" id="search-hint" aria-live="polite">
         @if (searching()) {
-        Buscando…
+          Buscando…
         } @else if (searchError(); as message) {
-        {{ message }}
+          {{ message }}
         } @else {
-        La búsqueda se consulta al servidor.
+          La búsqueda se consulta al servidor.
         }
       </span>
     </div>
 
     <div class="filters-field">
       <label class="filters-label" for="status-filter">Estado</label>
-      <select class="filters-control" id="status-filter" [value]="filters().status"
-        (change)="onStatusFilterChange($any($event.target).value)">
+      <select
+        class="filters-control"
+        id="status-filter"
+        [value]="filters().status"
+        (change)="onStatusFilterChange($any($event.target).value)"
+      >
         <option value="">Todos</option>
         <option value="OPEN">Abierta</option>
         <option value="IN_PROGRESS">En progreso</option>
@@ -74,13 +87,48 @@
 
     <div class="filters-field">
       <label class="filters-label" for="priority-filter">Prioridad</label>
-      <select class="filters-control" id="priority-filter" [value]="filters().priority"
-        (change)="onPriorityFilterChange($any($event.target).value)">
+      <select
+        class="filters-control"
+        id="priority-filter"
+        [value]="filters().priority"
+        (change)="onPriorityFilterChange($any($event.target).value)"
+      >
         <option value="">Todas</option>
         <option value="LOW">Baja</option>
         <option value="MEDIUM">Media</option>
         <option value="HIGH">Alta</option>
         <option value="CRITICAL">Crítica</option>
+      </select>
+    </div>
+
+    <div class="filters-field">
+      <label class="filters-label" for="category-filter">Categoría</label>
+      <select
+        class="filters-control"
+        id="category-filter"
+        (change)="onCategoryFilterChange($any($event.target).value)"
+      >
+        <option value="" [selected]="filters().category === ''">Todas</option>
+        @for (category of categories(); track category) {
+          <option [value]="category" [selected]="category === filters().category">
+            {{ category }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <div class="filters-field">
+      <label class="filters-label" for="sort-order">Ordenar por</label>
+      <select
+        class="filters-control"
+        id="sort-order"
+        [value]="sort().field + ':' + sort().direction"
+        (change)="onSortChange($any($event.target).value)"
+      >
+        <option value="createdAt:desc">Más recientes primero</option>
+        <option value="createdAt:asc">Más antiguas primero</option>
+        <option value="priority:desc">Prioridad: mayor a menor</option>
+        <option value="priority:asc">Prioridad: menor a mayor</option>
       </select>
     </div>
 
@@ -90,35 +138,109 @@
   </div>
 
   <p class="incident-list-count" aria-live="polite">
-    Mostrando {{ visibleCount() }} de {{ totalCount() }} incidencias.
+    @if (visibleCount() === 0) {
+      Ningún resultado de {{ totalCount() }} incidencias.
+    } @else {
+      Mostrando {{ pageRange().from }}–{{ pageRange().to }} de {{ visibleCount() }} resultados
+      @if (visibleCount() !== totalCount()) {
+        (filtrados de {{ totalCount() }})
+      }.
+    }
   </p>
 
-  <p class="incident-list-selection" aria-live="polite" [appIncidentHighlight]="selectedIncident()?.priority">
+  <p
+    class="incident-list-selection"
+    aria-live="polite"
+    [appIncidentHighlight]="selectedIncident()?.priority"
+  >
     @if (selectedIncident(); as incident) {
-    Incidencia seleccionada: <strong>{{ incident.title }}</strong>
-    ({{ incident.id | uppercase }} · prioridad {{ incident.priority | incidentPriority }})
+      Incidencia seleccionada: <strong>{{ incident.title }}</strong>
+      ({{ incident.id | uppercase }} · prioridad {{ incident.priority | incidentPriority }})
     } @else {
-    <span class="incident-list-selection--empty">Ninguna incidencia seleccionada.</span>
+      <span class="incident-list-selection--empty">Ninguna incidencia seleccionada.</span>
     }
   </p>
 
   <ul class="incident-list-grid">
-    @for (incident of visibleIncidents(); track incident.id) {
-    <li class="incident-list-item">
-      <app-incident-card [incident]="incident" [detailLink]="['/incidents', incident.id]"
-        [selected]="incident.id === selectedId()" (incidentSelected)="onIncidentSelected($event)"
-        (deleteRequested)="onDeleteRequested($event)" />
-    </li>
+    @for (incident of pagedIncidents(); track incident.id) {
+      <li class="incident-list-item">
+<app-incident-card
+          [incident]="incident"
+          [detailLink]="['/incidents', incident.id]"
+          [selected]="incident.id === selectedId()"
+          (incidentSelected)="onIncidentSelected($event)"
+          (deleteRequested)="onDeleteRequested($event)"
+        />
+      </li>
     } @empty {
-    <li class="incident-list-empty">
-      @if (!loaded()) {
-      Cargando…
-      } @else if (hasActiveFilters()) {
-      Ninguna incidencia coincide con los filtros aplicados.
-      } @else {
-      No hay incidencias registradas.
-      }
-    </li>
+      <li class="incident-list-empty">
+        @if (!loaded()) {
+          <app-loading-indicator />
+        } @else if (hasActiveFilters()) {
+          <app-empty-state
+            message="Ninguna incidencia coincide con los filtros aplicados."
+            hint="Prueba a quitar alguno para ver más resultados."
+          >
+            <button type="button" class="btn" (click)="clearFilters()">Limpiar filtros</button>
+          </app-empty-state>
+        } @else {
+          <app-empty-state
+            message="No hay incidencias registradas."
+            hint="Cuando se registre la primera, aparecerá aquí."
+          >
+            <a class="btn btn--primary" routerLink="/incidents/new">Registrar incidencia</a>
+          </app-empty-state>
+        }
+      </li>
     }
   </ul>
+
+<app-confirm-dialog
+    [open]="pendingDeletion() !== null"
+    title="Eliminar incidencia"
+    [message]="
+      '¿Seguro que quieres eliminar «' +
+      (pendingDeletion()?.title ?? '') +
+      '»? Esta acción no se puede deshacer.'
+    "
+    confirmLabel="Eliminar"
+    [destructive]="true"
+    (confirmed)="confirmDeletion()"
+    (cancelled)="cancelDeletion()"
+  />
+
+  @if (totalPages() > 1 || visibleCount() > pageSizes[0]) {
+    <nav class="pager" aria-label="Paginación de resultados">
+      <button
+        type="button"
+        class="btn"
+        [disabled]="!hasPreviousPage()"
+        (click)="previousPage()"
+      >
+        Anterior
+      </button>
+
+      <span class="pager-status" aria-live="polite">
+        Página {{ currentPageNumber() }} de {{ totalPages() }}
+      </span>
+
+      <button type="button" class="btn" [disabled]="!hasNextPage()" (click)="nextPage()">
+        Siguiente
+      </button>
+
+      <label class="pager-size" for="page-size">
+        Por página
+        <select
+          class="filters-control"
+          id="page-size"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($any($event.target).value)"
+        >
+          @for (size of pageSizes; track size) {
+            <option [value]="size">{{ size }}</option>
+          }
+        </select>
+      </label>
+    </nav>
+  }
 </section>

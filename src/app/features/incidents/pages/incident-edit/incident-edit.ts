@@ -1,13 +1,17 @@
 import { Component, computed, DestroyRef, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentForm, IncidentFormValue } from '../../components/incident-form/incident-form';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IncidentStore } from '../../../../core/state/incident-store';
+import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 
 @Component({
   selector: 'app-incident-edit',
-  imports: [IncidentForm, RouterLink],
+  imports: [
+    IncidentForm, 
+    RouterLink,
+    LoadingIndicator
+  ],
   templateUrl: './incident-edit.html',
   styleUrl: './incident-edit.scss',
 })
@@ -44,8 +48,6 @@ export class IncidentEdit {
     });
     this.store
       .update(this.id(), value)
-      // Igual que en el alta: sin esto se navegaría desde un componente ya
-      // destruido si el usuario se marcha mientras se guarda.
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.router.navigate(['/incidents', this.id()]),

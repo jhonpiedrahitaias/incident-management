@@ -4,10 +4,15 @@ import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
 import { IncidentStore } from '../../../../core/state/incident-store';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, IncidentPriorityPipe, IncidentHighlight],
+  imports: [RouterLink, 
+    IncidentPriorityPipe, 
+    IncidentHighlight,
+    EmptyState
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
