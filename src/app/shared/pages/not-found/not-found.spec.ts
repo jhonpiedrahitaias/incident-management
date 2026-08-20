@@ -18,15 +18,15 @@ describe('NotFound', () => {
     fixture.detectChanges();
   });
 
-  it('should create not found page', () => {
+  it('Debería crear not found page', () => {
     expect(component).toBeTruthy();
   });
 
-  it('explica que la página no existe', () => {
+  it('Explica que la página no existe', () => {
     expect(fixture.nativeElement.textContent).toContain('Página no encontrada');
   });
 
-  it('ofrece salidas hacia el panel y el listado', () => {
+  it('Ofrece salidas hacia el panel y el listado', () => {
     const hrefs = Array.from<HTMLAnchorElement>(
       fixture.nativeElement.querySelectorAll('a'),
     ).map((a) => a.getAttribute('href'));

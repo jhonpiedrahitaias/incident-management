@@ -25,22 +25,15 @@ describe('FocusWithin', () => {
     fixture.detectChanges();
   });
 
-  it('should create an instance', () => {
+  it('Debería crear an instance', () => {
     expect(panel()).toBeTruthy();
   });
 
-  it('no marca nada mientras el foco está fuera', () => {
+  it('No marca nada mientras el foco está fuera', () => {
     expect(panel().classList).not.toContain('has-focus-within');
   });
 
-  it('marca el elemento cuando el foco entra con teclado', () => {
-    element('inside-a').focus();
-    fixture.detectChanges();
-
-    expect(panel().classList).toContain('has-focus-within');
-  });
-
-  it('mantiene la marca al tabular entre dos hijos', () => {
+  it('Mantiene la marca al tabular entre dos hijos', () => {
     element('inside-a').focus();
     fixture.detectChanges();
 

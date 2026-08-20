@@ -7,7 +7,7 @@ import { AuthService } from '../services/auth-service';
  * Exige uno de los roles indicados para entrar.
  *
  * Es una **factoría** de guards, igual que `forbiddenWords` lo era de
- * validadores en el Día 12: recibe la configuración y devuelve la función.
+ * validadores: recibe la configuración y devuelve la función.
  * Así la ruta se lee sola:
  *
  * ```ts

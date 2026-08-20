@@ -320,7 +320,7 @@ export class IncidentStore {
 
   // --- Interno -------------------------------------------------------------
 
-  /** Registra el último error. El mensaje ya viene traducido (Día 18). */
+  /** Registra el último error. El mensaje ya viene traducido. */
   private track<T>(source: Observable<T>): Observable<T> {
     this.lastError.set(null);
 

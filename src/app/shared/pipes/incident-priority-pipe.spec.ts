@@ -10,7 +10,7 @@ describe('IncidentPriorityPipe', () => {
     pipe = new IncidentPriorityPipe();
   });
 
-  it('create an instance', () => {
+  it('Create an instance', () => {
     expect(pipe).toBeTruthy();
   });
 
@@ -23,12 +23,12 @@ describe('IncidentPriorityPipe', () => {
     ];
 
     for (const [value, expected] of cases) {
-      it(`traduce ${value} a "${expected}"`, () => {
+      it(`Traduce ${value} a "${expected}"`, () => {
         expect(pipe.transform(value)).toBe(expected);
       });
     }
 
-    it('cubre todos los valores del tipo IncidentPriority', () => {
+    it('Cubre todos los valores del tipo IncidentPriority', () => {
       // Si mañana se añade una prioridad al modelo, este test obliga a
       // añadirla también aquí y en el pipe.
       const covered = cases.map(([value]) => value);
@@ -55,7 +55,7 @@ describe('IncidentPriorityPipe', () => {
     }
   });
 
-  it('no modifica el objeto recibido', () => {
+  it('No modifica el objeto recibido', () => {
     const incident = { priority: 'HIGH' as IncidentPriority };
     const snapshot = { ...incident };
 
@@ -64,7 +64,7 @@ describe('IncidentPriorityPipe', () => {
     expect(incident).toEqual(snapshot);
   });
 
-  it('es consistente: la misma entrada siempre da la misma salida', () => {
+  it('Es consistente: la misma entrada siempre da la misma salida', () => {
     expect(pipe.transform('HIGH')).toBe(pipe.transform('HIGH'));
   });
 });

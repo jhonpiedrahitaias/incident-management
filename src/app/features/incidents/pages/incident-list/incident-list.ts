@@ -25,7 +25,7 @@ import {
 } from '../../../../core/state/incident-store';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
-import { IncidentCard } from '../../components/incident-card/incident-card.component';
+import { IncidentCard } from '../../components/incident-card/incident-card';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
