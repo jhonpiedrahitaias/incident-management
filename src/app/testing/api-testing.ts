@@ -1,14 +1,13 @@
-//IA
 import { EnvironmentProviders } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TestBed, tick } from '@angular/core/testing';
-import { AuthService } from '../core/services/auth-service';
 import { fakeBackendInterceptor, DEMO_PASSWORD, resetFakeBackend, setFakeBackendLatency } from '../core/api/fake-backend-interceptor';
 import { authTokenInterceptor } from '../core/http/auth-token-interceptor';
 import { correlationIdInterceptor } from '../core/http/correlation-id-interceptor';
 import { errorHandlingInterceptor } from '../core/http/error-handling-interceptor';
 import { loadingInterceptor } from '../core/http/loading-interceptor';
-import { IncidentService } from '../core/services/incident-service';
+import { AuthService } from '../core/services/auth-service';
+import { IncidentStore } from '../core/state/incident-store';
 
 /**
  * Utilidades para probar contra la API simulada.
@@ -35,18 +34,28 @@ export function provideTestApi(): EnvironmentProviders {
   );
 }
 
-/** Credenciales válidas del backend simulado. */
-export const TEST_CREDENTIALS = {
-  email: 'ana.torres@example.com',
-  password: DEMO_PASSWORD,
-};
+/**
+ * Credenciales válidas por rol.
+ *
+ * Corresponden a los usuarios simulados: Ana es ADMIN, Luis AGENT y Carlos
+ * REQUESTER. Tenerlas por rol permite probar la autorización sin repetir
+ * correos por los specs.
+ */
+export const CREDENTIALS_BY_ROLE = {
+  ADMIN: { email: 'ana.torres@example.com', password: DEMO_PASSWORD },
+  AGENT: { email: 'luis.gomez@example.com', password: DEMO_PASSWORD },
+  REQUESTER: { email: 'carlos.pena@example.com', password: DEMO_PASSWORD },
+} as const;
+
+/** Credenciales por defecto (rol ADMIN). */
+export const TEST_CREDENTIALS = CREDENTIALS_BY_ROLE.ADMIN;
 
 /**
  * Inicia sesión y espera a la respuesta.
  * Solo se puede llamar dentro de `fakeAsync`.
  */
-export function loginForTest(): void {
-  TestBed.inject(AuthService).login(TEST_CREDENTIALS).subscribe();
+export function loginForTest(role: keyof typeof CREDENTIALS_BY_ROLE = 'ADMIN'): void {
+  TestBed.inject(AuthService).login(CREDENTIALS_BY_ROLE[role]).subscribe();
   tick();
 }
 
@@ -67,9 +76,9 @@ export function prepareApi(): void {
  * Inyecta el servicio y avanza el tiempo hasta que llega la carga inicial.
  * Solo se puede llamar dentro de `fakeAsync`.
  */
-export function loadIncidents(): IncidentService {
-  const service = TestBed.inject(IncidentService);
+export function loadIncidents(): IncidentStore {
+  const store = TestBed.inject(IncidentStore);
   tick();
 
-  return service;
+  return store;
 }

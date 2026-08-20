@@ -21,8 +21,8 @@ import { RouterLink } from "@angular/router";
     FocusWithin,
     RouterLink,
   ],
-  templateUrl: './incident-card.component.html',
-  styleUrl: './incident-card.component.scss',
+  templateUrl: './incident-card.html',
+  styleUrl: './incident-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IncidentCard {
