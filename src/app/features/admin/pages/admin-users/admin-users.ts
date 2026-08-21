@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AuthService } from '../../../../core/services/auth-service';
 import { UserService } from '../../../../core/services/user-service';
 
@@ -7,6 +7,7 @@ import { UserService } from '../../../../core/services/user-service';
   imports: [],
   templateUrl: './admin-users.html',
   styleUrl: './admin-users.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminUsers {
   private readonly userService = inject(UserService);
