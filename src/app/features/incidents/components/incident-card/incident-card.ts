@@ -6,6 +6,7 @@ import { RelativeTimePipe } from "../../../../shared/pipes/relative-time-pipe";
 import { FocusWithin } from "../../../../shared/directives/focus-within";
 import { IncidentHighlight } from "../../../../shared/directives/incident-highlight";
 import { RouterLink } from "@angular/router";
+import { IncidentStatePipe } from "../../../../shared/pipes/incident-state-pipe";
 
 
 @Component({
@@ -20,6 +21,7 @@ import { RouterLink } from "@angular/router";
     IncidentHighlight,
     FocusWithin,
     RouterLink,
+    IncidentStatePipe
   ],
   templateUrl: './incident-card.html',
   styleUrl: './incident-card.scss',

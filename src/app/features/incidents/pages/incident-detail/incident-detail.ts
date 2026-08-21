@@ -8,6 +8,9 @@ import { RelativeTimePipe } from '../../../../shared/pipes/relative-time-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
 import { AuthService } from '../../../../core/services/auth-service';
 import { IncidentStore } from '../../../../core/state/incident-store';
+import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
+import { IncidentActivity } from '../../components/incident-activity/incident-activity';
+import { IncidentStatePipe } from '../../../../shared/pipes/incident-state-pipe';
 
 @Component({
   selector: 'app-incident-detail',
@@ -18,6 +21,9 @@ import { IncidentStore } from '../../../../core/state/incident-store';
     IncidentPriorityPipe,
     RelativeTimePipe,
     IncidentHighlight,
+    LoadingIndicator,
+    IncidentActivity,
+    IncidentStatePipe
   ],
   templateUrl: './incident-detail.html',
   styleUrl: './incident-detail.scss',

@@ -10,28 +10,14 @@
   <p class="incident-card-description">{{ incident().description }}</p>
 
   <div class="incident-card-meta">
-    @switch (incident().status) {
-    @case ('OPEN') {
-    <span class="badge badge--status-open"><span class="visually-hidden">Estado: </span>Abierta</span>
-    }
-    @case ('IN_PROGRESS') {
-    <span class="badge badge--status-in-progress"><span class="visually-hidden">Estado: </span>En progreso</span>
-    }
-    @case ('RESOLVED') {
-    <span class="badge badge--status-resolved"><span class="visually-hidden">Estado: </span>Resuelta</span>
-    }
-    @case ('CLOSED') {
-    <span class="badge badge--status-closed"><span class="visually-hidden">Estado: </span>Cerrada</span>
-    }
-    @default {
-    <span class="badge"><span class="visually-hidden">Estado: </span>Desconocido</span>
-    }
-    }
+    <span class="badge badge--status-{{ incident().status | lowercase }}">
+      <span>Estado: </span>{{ incident().status |
+      incidentState }}</span>
 
     @if (incident().assignedAgentId) {
     <span class="incident-card-agent">Agente asignado: {{ incident().assignedAgentId }}</span>
     } @else {
-    <span class="incident-card-agent incident-card-agent--unassigned">Sin agente asignado</span>
+    <span class="incident-card-agent incident-card-agent--unassigned">Agente asignado: Sin agente asignado</span>
     }
 
     <time class="incident-card-date" [attr.datetime]="incident().createdAt"
