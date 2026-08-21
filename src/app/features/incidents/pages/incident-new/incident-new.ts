@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IncidentService } from '../../../../core/services/incident-service';
 import { UserService } from '../../../../core/services/user-service';
@@ -10,6 +10,7 @@ import { IncidentStore } from '../../../../core/state/incident-store';
   imports: [IncidentForm, RouterLink],
   templateUrl: './incident-new.html',
   styleUrl: './incident-new.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IncidentNew {
   private readonly store = inject(IncidentStore);

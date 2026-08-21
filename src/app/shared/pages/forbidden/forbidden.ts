@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AuthService } from '../../../core/services/auth-service';
 import { RouterLink } from '@angular/router';
 
@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   templateUrl: './forbidden.html',
   styleUrl: './forbidden.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Forbidden {
   private readonly authService = inject(AuthService);

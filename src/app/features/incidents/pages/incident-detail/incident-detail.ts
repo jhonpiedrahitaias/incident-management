@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { IncidentService } from '../../../../core/services/incident-service';
@@ -21,6 +21,7 @@ import { IncidentStore } from '../../../../core/state/incident-store';
   ],
   templateUrl: './incident-detail.html',
   styleUrl: './incident-detail.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IncidentDetail {
   private readonly store = inject(IncidentStore);
@@ -28,7 +29,7 @@ export class IncidentDetail {
   readonly id = input.required<string>();
   protected readonly incident = computed(() => this.store.getById(this.id()));
   protected readonly canManageIncidents = inject(AuthService).canManageIncidents;
-  
+
   protected readonly reporterName = computed(() => {
     const reporterId = this.incident()?.reporterId;
     return reporterId ? (this.userService.getById(reporterId)?.name ?? reporterId) : '';

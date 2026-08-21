@@ -30,8 +30,8 @@ export class IncidentCard {
   readonly selected = input(false);
   readonly incidentSelected = output<Incident>();
   readonly deleteRequested = output<Incident>();
-  readonly detailLink = input<readonly unknown[] | null>(null);
-  
+  readonly detailLink = input<string | null>(null);
+
   protected onSelect(): void {
     this.incidentSelected.emit(this.incident());
   }

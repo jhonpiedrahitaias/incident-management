@@ -29,7 +29,6 @@
       <button type="button" class="btn" (click)="reload()">Reintentar</button>
     </p>
   }
-
   <ul class="stats" aria-label="Resumen de incidencias">
     <li class="stats-item">
       <span class="stats-value">{{ totalCount() }}</span>
@@ -164,9 +163,9 @@
   <ul class="incident-list-grid">
     @for (incident of pagedIncidents(); track incident.id) {
       <li class="incident-list-item">
-<app-incident-card
+        <app-incident-card
           [incident]="incident"
-          [detailLink]="['/incidents', incident.id]"
+          [detailLink]="'/incidents/' + incident.id"
           [selected]="incident.id === selectedId()"
           (incidentSelected)="onIncidentSelected($event)"
           (deleteRequested)="onDeleteRequested($event)"
@@ -195,7 +194,7 @@
     }
   </ul>
 
-<app-confirm-dialog
+  <app-confirm-dialog
     [open]="pendingDeletion() !== null"
     title="Eliminar incidencia"
     [message]="
