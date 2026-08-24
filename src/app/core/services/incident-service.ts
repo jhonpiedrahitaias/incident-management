@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, finalize, tap } from 'rxjs';
-import { Incident, IncidentChanges, IncidentDraft } from '../models/incident.model';
+import { Incident, IncidentChanges, IncidentDraft, IncidentStatusEnum } from '../models/incident.model';
 import { IncidentSearchCriteria } from '../models/incident-search-criteria.model';
 import { IncidentApi } from '../api/incident-api';
 import { LoadingService } from './loading-service';
@@ -53,7 +53,7 @@ export class IncidentService {
   }
 
   search(criteria: IncidentSearchCriteria): readonly Incident[] {
-    return this.collection().filter((incident) => criteria.matches(incident));
+    return this.collection().filter((incident) => criteria.status === '' || incident.status === criteria.status);
   }
 
   create(draft: IncidentDraft): Observable<Incident> {
@@ -61,7 +61,7 @@ export class IncidentService {
     const incident: Incident = {
       ...draft,
       id: this.nextId(),
-      status: draft.status ?? 'OPEN',
+      status: draft.status ?? IncidentStatusEnum.OPEN,
       createdAt: now,
       updatedAt: now,
     };

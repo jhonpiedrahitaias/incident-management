@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../services/auth-service';
 import { LoadingService } from '../services/loading-service';
 import { IncidentStore } from '../state/incident-store';
-import { Incident, IncidentDraft } from '../models/incident.model';
+import { Incident, IncidentDraft, IncidentPriorityEnum } from '../models/incident.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import {
   CREDENTIALS_BY_ROLE,
@@ -24,7 +24,7 @@ const DRAFT: IncidentDraft = {
   title: 'Fuga en el aire acondicionado',
   description: 'Gotea sobre los equipos del rack principal.',
   category: 'Infraestructura',
-  priority: 'HIGH',
+  priority: IncidentPriorityEnum.HIGH,
   reporterId: 'u-005',
 };
 

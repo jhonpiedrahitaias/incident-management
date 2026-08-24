@@ -3,15 +3,15 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { IncidentApi } from './incident-api';
-import { Incident } from '../models/incident.model';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
 
 const INCIDENT: Incident = {
   id: 'inc-001',
   title: 'No se puede iniciar sesión',
   description: 'Error 500 al autenticarse.',
   category: 'Autenticación',
-  priority: 'HIGH',
-  status: 'OPEN',
+  priority: IncidentPriorityEnum.HIGH,
+  status: IncidentStatusEnum.OPEN,
   reporterId: 'u-004',
   createdAt: '2026-07-27T09:15:00.000Z',
   updatedAt: '2026-07-27T09:15:00.000Z',

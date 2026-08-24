@@ -1,27 +1,24 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { Incident, IncidentChanges, IncidentDraft } from '../models/incident.model';
-import { IncidentPriority, IncidentStatus } from '../models/incident.model';
+import { Incident, IncidentChanges, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
+import { IncidentPriority } from '../models/incident.model';
+import {
+  IncidentSearchCriteria,
+  NO_CRITERIA,
+  hasActiveCriteria,
+  matchesLocalCriteria,
+} from '../models/incident-search-criteria.model';
 import { IncidentApi } from '../api/incident-api';
 import { LoadingService } from '../services/loading-service';
 
-/** Valor de un filtro cuando no se filtra por ese campo. */
-export const ANY = '';
-
-/** Filtros de la vista de incidencias. */
-export interface IncidentFilters {
-  readonly search: string;
-  readonly status: IncidentStatus | typeof ANY;
-  readonly priority: IncidentPriority | typeof ANY;
-  readonly category: string;
-}
-
-const NO_FILTERS: IncidentFilters = {
-  search: ANY,
-  status: ANY,
-  priority: ANY,
-  category: ANY,
-};
+// Los criterios de búsqueda viven en el modelo, no aquí: son parte del
+// dominio, los usa también la vista y se reflejan en la URL. El store solo
+// los guarda y los aplica.
+export {
+  ANY,
+  NO_CRITERIA,
+  type IncidentSearchCriteria,
+} from '../models/incident-search-criteria.model';
 
 /** Campos por los que se puede ordenar. */
 export type SortField = 'createdAt' | 'priority';
@@ -61,21 +58,47 @@ export const DEFAULT_PAGE_SIZE = 4;
 /** Tamaños de página que puede elegir el usuario. */
 export const PAGE_SIZES = [4, 8, 12] as const;
 
+/**
+ * Almacén de estado de incidencias.
+ *
+ * Reúne en un solo sitio lo que hasta ahora estaba repartido entre
+ * `IncidentService` y los componentes: la colección, la selección, la
+ * carga, el error y los filtros.
+ *
+ * La estructura es siempre la misma, y es lo que conviene retener:
+ *
+ * ```
+ * estado privado (signal)  →  selectores (computed)  →  acciones (métodos)
+ *        ↑ nadie de fuera         ↑ solo lectura           ↑ la única vía
+ *          lo escribe               para la vista            de escritura
+ * ```
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class IncidentStore {
   private readonly api = inject(IncidentApi);
   private readonly loadingService = inject(LoadingService);
+
+  // --- Estado privado ------------------------------------------------------
+  //
+  // Todo `private`. Un componente no puede escribir aquí ni por descuido:
+  // TypeScript no le deja ver los campos.
+
   private readonly incidentList = signal<readonly Incident[]>([]);
   private readonly selectedIncidentId = signal<string | null>(null);
   private readonly lastError = signal<string | null>(null);
   private readonly initialized = signal(false);
-  private readonly activeFilters = signal<IncidentFilters>(NO_FILTERS);
+  private readonly activeFilters = signal<IncidentSearchCriteria>(NO_CRITERIA);
   private readonly activeSort = signal<IncidentSort>(DEFAULT_SORT);
   private readonly currentPage = signal(1);
   private readonly currentPageSize = signal<number>(DEFAULT_PAGE_SIZE);
+  /** Resultados que devolvió el servidor para el término de búsqueda. */
   private readonly searchResults = signal<readonly Incident[]>([]);
+
+  // --- Selectores ----------------------------------------------------------
+  //
+  // Señales de solo lectura y valores derivados. Es todo lo que ve la vista.
 
   readonly incidents = this.incidentList.asReadonly();
   readonly filters = this.activeFilters.asReadonly();
@@ -85,6 +108,7 @@ export class IncidentStore {
   readonly error = this.lastError.asReadonly();
   readonly loaded = this.initialized.asReadonly();
   readonly loading = this.loadingService.loading;
+
   readonly selectedId = this.selectedIncidentId.asReadonly();
 
   readonly selectedIncident = computed(() =>
@@ -95,17 +119,14 @@ export class IncidentStore {
   readonly totalCount = computed(() => this.incidentList().length);
 
   readonly criticalCount = computed(
-    () => this.incidentList().filter((incident) => incident.priority === 'CRITICAL').length,
+    () => this.incidentList().filter((incident) => incident.priority === IncidentPriorityEnum.CRITICAL).length,
   );
 
   readonly openCount = computed(
-    () => this.incidentList().filter((incident) => incident.status === 'OPEN').length,
+    () => this.incidentList().filter((incident) => incident.status === IncidentStatusEnum.OPEN).length,
   );
 
-  readonly hasActiveFilters = computed(() => {
-    const { search, status, priority, category } = this.activeFilters();
-    return search.trim() !== '' || status !== ANY || priority !== ANY || category !== ANY;
-  });
+  readonly hasActiveFilters = computed(() => hasActiveCriteria(this.activeFilters()));
 
   /**
    * Categorías disponibles, derivadas de las propias incidencias.
@@ -129,16 +150,12 @@ export class IncidentStore {
    * colección hace que eliminar surta efecto sin repetir la búsqueda.
    */
   readonly visibleIncidents = computed(() => {
-    const { search, status, priority, category } = this.activeFilters();
-    const base = search.trim() ? this.searchResults() : this.incidentList();
+    const criteria = this.activeFilters();
+    const base = criteria.searchTerm.trim() ? this.searchResults() : this.incidentList();
     const alive = new Set(this.incidentList().map((incident) => incident.id));
 
     const filtered = base.filter(
-      (incident) =>
-        alive.has(incident.id) &&
-        (status === ANY || incident.status === status) &&
-        (priority === ANY || incident.priority === priority) &&
-        (category === ANY || incident.category === category),
+      (incident) => alive.has(incident.id) && matchesLocalCriteria(incident, criteria),
     );
 
     return this.applySort(filtered);
@@ -150,13 +167,23 @@ export class IncidentStore {
   // --- Paginación ----------------------------------------------------------
 
   readonly totalPages = computed(() =>
+    // Siempre al menos una página, aunque no haya resultados: «página 1 de 1»
+    // se entiende mejor que «página 1 de 0».
     Math.max(1, Math.ceil(this.visibleCount() / this.currentPageSize())),
   );
 
+  /**
+   * Página efectiva.
+   *
+   * Se recorta contra el total en vez de corregir `currentPage` al filtrar:
+   * si el usuario está en la página 3 y un filtro deja una sola página,
+   * verá la 1 sin que haya hecho falta reaccionar a nada.
+   */
   readonly currentPageNumber = computed(() =>
     Math.min(Math.max(1, this.currentPage()), this.totalPages()),
   );
 
+  /** Las incidencias de la página actual: esto es lo que se pinta. */
   readonly pagedIncidents = computed(() => {
     const size = this.currentPageSize();
     const start = (this.currentPageNumber() - 1) * size;
@@ -167,6 +194,7 @@ export class IncidentStore {
   readonly hasPreviousPage = computed(() => this.currentPageNumber() > 1);
   readonly hasNextPage = computed(() => this.currentPageNumber() < this.totalPages());
 
+  /** Rango mostrado, para el texto «mostrando 1–4 de 12». */
   readonly pageRange = computed(() => {
     const total = this.visibleCount();
 
@@ -184,6 +212,12 @@ export class IncidentStore {
     this.load();
   }
 
+  // --- Acciones ------------------------------------------------------------
+  //
+  // La única forma de cambiar el estado. Cada una describe una intención,
+  // no una asignación: `select(id)`, no `setSelectedId(id)`.
+
+  /** Recarga la colección desde el servidor. */
   load(): void {
     this.track(this.api.getAll()).subscribe({
       next: (incidents) => {
@@ -200,7 +234,7 @@ export class IncidentStore {
     const incident: Incident = {
       ...draft,
       id: this.nextId(),
-      status: draft.status ?? 'OPEN',
+      status: draft.status ?? IncidentStatusEnum.OPEN,
       createdAt: now,
       updatedAt: now,
     };
@@ -257,21 +291,32 @@ export class IncidentStore {
     this.selectedIncidentId.set(null);
   }
 
-  setFilters(changes: Partial<IncidentFilters>): void {
+  /**
+   * Cambia uno o varios filtros, conservando el resto.
+   *
+   * Vuelve a la primera página: seguir en la página 3 tras cambiar un
+   * filtro es desconcertante, porque los resultados son otros.
+   */
+  setFilters(changes: Partial<IncidentSearchCriteria>): void {
     this.activeFilters.update((current) => ({ ...current, ...changes }));
     this.currentPage.set(1);
   }
 
   clearFilters(): void {
-    this.activeFilters.set(NO_FILTERS);
+    this.activeFilters.set(NO_CRITERIA);
     this.currentPage.set(1);
   }
 
+  /** Cambia el criterio de ordenación. También vuelve a la primera página. */
   setSort(sort: IncidentSort): void {
     this.activeSort.set(sort);
     this.currentPage.set(1);
   }
 
+  /**
+   * Ordena por un campo. Si ya se ordenaba por él, invierte la dirección —
+   * que es lo que espera quien pulsa dos veces la misma cabecera.
+   */
   toggleSort(field: SortField): void {
     this.activeSort.update((current) =>
       current.field === field
@@ -298,6 +343,7 @@ export class IncidentStore {
     this.currentPage.set(1);
   }
 
+  /** Guarda lo que devolvió el servidor para el término de búsqueda actual. */
   setSearchResults(results: readonly Incident[]): void {
     this.searchResults.set(results);
   }
@@ -310,23 +356,33 @@ export class IncidentStore {
     this.lastError.set(message);
   }
 
+  // --- Consulta ------------------------------------------------------------
+
+  /** Busca en la colección ya cargada. `undefined` si no está. */
   getById(id: string): Incident | undefined {
     return this.incidentList().find((incident) => incident.id === id);
   }
 
+  /** Todas las incidencias cargadas, en un arreglo nuevo. */
   getAll(): readonly Incident[] {
     return [...this.incidentList()];
   }
 
   // --- Interno -------------------------------------------------------------
 
-  /** Registra el último error. El mensaje ya viene traducido. */
+  /** Registra el último error. El mensaje ya viene traducido (Día 18). */
   private track<T>(source: Observable<T>): Observable<T> {
     this.lastError.set(null);
 
     return source.pipe(tap({ error: (error: Error) => this.lastError.set(error.message) }));
   }
 
+  /**
+   * Ordena una copia, nunca el arreglo recibido.
+   *
+   * `sort` muta en su sitio, así que ordenar directamente el resultado de
+   * un `computed` corrompería el estado del que deriva.
+   */
   private applySort(incidents: readonly Incident[]): readonly Incident[] {
     const { field, direction } = this.activeSort();
     const factor = direction === 'asc' ? 1 : -1;
@@ -337,6 +393,8 @@ export class IncidentStore {
           ? PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
           : Date.parse(a.createdAt) - Date.parse(b.createdAt);
 
+      // Desempate estable por id: dos incidencias con la misma prioridad
+      // siempre salen en el mismo orden, sin bailes entre renders.
       return comparison !== 0 ? comparison * factor : a.id.localeCompare(b.id);
     });
   }

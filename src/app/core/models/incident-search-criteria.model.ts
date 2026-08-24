@@ -1,12 +1,12 @@
-import { Incident, IncidentPriority, IncidentStatus } from './incident.model';
+import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from './incident.model';
 
 export const ANY = '';
 
 //Filters
 export interface IncidentSearchCriteria {
   readonly searchTerm: string;
-  readonly status: IncidentStatus | typeof ANY;
-  readonly priority: IncidentPriority | typeof ANY;
+  readonly status: IncidentStatusEnum | typeof ANY;
+  readonly priority: IncidentPriorityEnum | typeof ANY;
   readonly category: string;
 }
 
