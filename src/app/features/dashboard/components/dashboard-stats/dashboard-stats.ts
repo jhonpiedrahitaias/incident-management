@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { IncidentStore } from '../../../../core/state/incident-store';
-import { IncidentStatus } from '../../../../core/models/incident.model';
+import { IncidentStatus, IncidentStatusEnum } from '../../../../core/models/incident.model';
 
 /** Etiqueta legible de cada estado, para el desglose. */
 const STATUS_LABELS: Readonly<Record<IncidentStatus, string>> = {
@@ -36,7 +36,7 @@ export class DashboardStats {
     const incidents = this.store.incidents();
     const total = incidents.length;
 
-    return (Object.keys(STATUS_LABELS) as IncidentStatus[]).map((status) => {
+    return (Object.keys(STATUS_LABELS) as IncidentStatusEnum[]).map((status) => {
       const count = incidents.filter((incident) => incident.status === status).length;
 
       return {

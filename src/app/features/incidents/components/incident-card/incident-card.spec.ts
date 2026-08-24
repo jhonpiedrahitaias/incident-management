@@ -1,15 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IncidentCard } from './incident-card';
-import { Incident } from '../../../../core/models/incident.model';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../../../core/models/incident.model';
 
 const INCIDENT: Incident = {
   id: 'inc-001',
   title: 'No se puede iniciar sesión',
   description: 'El usuario recibe un error 500 al intentar autenticarse.',
   category: 'Autenticación',
-  priority: 'HIGH',
-  status: 'OPEN',
+  priority: IncidentPriorityEnum.HIGH,
+  status: IncidentStatusEnum.OPEN,
   reporterId: 'u-004',
   createdAt: '2026-07-27T09:15:00.000Z',
   updatedAt: '2026-07-27T09:15:00.000Z',

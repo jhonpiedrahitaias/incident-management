@@ -2,7 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { IncidentStore } from './incident-store';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
-import { Incident, IncidentDraft } from '../models/incident.model';
+import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
 import { loadIncidents, prepareApi, provideTestApi } from '../../testing/api-testing';
 import { failNextApiRequest } from '../api/fake-backend-interceptor';
 
@@ -10,7 +10,7 @@ const DRAFT: IncidentDraft = {
   title: 'Fuga en el aire acondicionado',
   description: 'Gotea sobre los equipos del rack principal.',
   category: 'Infraestructura',
-  priority: 'HIGH',
+  priority: IncidentPriorityEnum.HIGH,
   reporterId: 'u-005',
 };
 
@@ -27,25 +27,25 @@ describe('IncidentStore', () => {
     store = loadIncidents();
   }
 
-  it('Debería crearse', fakeAsync(() => {
+  it('should be created', fakeAsync(() => {
     start();
     expect(store).toBeTruthy();
   }));
 
-  it('Se comparte como única instancia en toda la aplicación', fakeAsync(() => {
+  it('se comparte como única instancia en toda la aplicación', fakeAsync(() => {
     start();
     expect(TestBed.inject(IncidentStore)).toBe(store);
   }));
 
   describe('carga inicial', () => {
-    it('Pide las incidencias al crearse', fakeAsync(() => {
+    it('pide las incidencias al crearse', fakeAsync(() => {
       start();
 
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length);
       expect(store.loaded()).toBe(true);
     }));
 
-    it('Mientras carga marca loading y luego lo apaga', fakeAsync(() => {
+    it('mientras carga marca loading y luego lo apaga', fakeAsync(() => {
       const pending = TestBed.inject(IncidentStore);
       expect(pending.loading()).toBe(true);
 
@@ -54,7 +54,7 @@ describe('IncidentStore', () => {
       expect(pending.loading()).toBe(false);
     }));
 
-    it('No hay error tras una carga correcta', fakeAsync(() => {
+    it('no hay error tras una carga correcta', fakeAsync(() => {
       start();
       expect(store.error()).toBeNull();
     }));
@@ -63,11 +63,11 @@ describe('IncidentStore', () => {
   describe('consulta', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Devuelve un arreglo nuevo, no la colección interna', () => {
+    it('devuelve un arreglo nuevo, no la colección interna', () => {
       expect(store.getAll()).not.toBe(store.getAll());
     });
 
-    it('Modificar lo devuelto no altera el estado del servicio', () => {
+    it('modificar lo devuelto no altera el estado del servicio', () => {
       (store.getAll() as Incident[]).length = 0;
 
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length);
@@ -77,7 +77,7 @@ describe('IncidentStore', () => {
       expect(store.getById('inc-001')?.title).toBe(MOCK_INCIDENTS[0].title);
     });
 
-    it('Devuelve undefined si el identificador no existe', () => {
+    it('devuelve undefined si el identificador no existe', () => {
       expect(store.getById('no-existe')).toBeUndefined();
     });
   });
@@ -85,7 +85,7 @@ describe('IncidentStore', () => {
   describe('creación', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Añade la incidencia y completa lo que decide el dominio', fakeAsync(() => {
+    it('añade la incidencia y completa lo que decide el dominio', fakeAsync(() => {
       let created: Incident | undefined;
       store.create(DRAFT).subscribe((incident) => (created = incident));
       tick();
@@ -96,7 +96,7 @@ describe('IncidentStore', () => {
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length + 1);
     }));
 
-    it('La colección solo cambia cuando el servidor confirma', fakeAsync(() => {
+    it('la colección solo cambia cuando el servidor confirma', fakeAsync(() => {
       store.create(DRAFT).subscribe();
 
       // Aún sin respuesta: nada de optimismo prematuro.
@@ -107,7 +107,7 @@ describe('IncidentStore', () => {
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length + 1);
     }));
 
-    it('La incidencia persiste en el servidor', fakeAsync(() => {
+    it('la incidencia persiste en el servidor', fakeAsync(() => {
       store.create(DRAFT).subscribe();
       tick();
 
@@ -132,7 +132,7 @@ describe('IncidentStore', () => {
   describe('actualización', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Aplica cambios parciales sin tocar el resto', fakeAsync(() => {
+    it('aplica cambios parciales sin tocar el resto', fakeAsync(() => {
       const original = MOCK_INCIDENTS[0];
       let updated: Incident | undefined;
 
@@ -143,7 +143,7 @@ describe('IncidentStore', () => {
       expect(updated!.description).toBe(original.description);
     }));
 
-    it('Conserva id y createdAt, y refresca updatedAt', fakeAsync(() => {
+    it('conserva id y createdAt, y refresca updatedAt', fakeAsync(() => {
       const original = MOCK_INCIDENTS[0];
       let updated: Incident | undefined;
 
@@ -155,20 +155,20 @@ describe('IncidentStore', () => {
       expect(updated!.updatedAt).not.toBe(original.updatedAt);
     }));
 
-    it('Los cambios persisten en el servidor', fakeAsync(() => {
-      store.update('inc-001', { priority: 'CRITICAL' }).subscribe();
+    it('los cambios persisten en el servidor', fakeAsync(() => {
+      store.update('inc-001', { priority: IncidentPriorityEnum.CRITICAL }).subscribe();
       tick();
 
       store.load();
       tick();
 
-      expect(store.getById('inc-001')?.priority).toBe('CRITICAL');
+      expect(store.getById('inc-001')?.priority).toBe(IncidentPriorityEnum.CRITICAL);
     }));
 
-    it('Recalcula los indicadores derivados', fakeAsync(() => {
+    it('recalcula los indicadores derivados', fakeAsync(() => {
       const before = store.criticalCount();
 
-      store.update('inc-001', { priority: 'CRITICAL' }).subscribe();
+      store.update('inc-001', { priority: IncidentPriorityEnum.CRITICAL }).subscribe();
       tick();
 
       expect(store.criticalCount()).toBe(before + 1);
@@ -178,7 +178,7 @@ describe('IncidentStore', () => {
   describe('eliminación', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Elimina la incidencia', fakeAsync(() => {
+    it('elimina la incidencia', fakeAsync(() => {
       store.remove('inc-001').subscribe();
       tick();
 
@@ -186,7 +186,7 @@ describe('IncidentStore', () => {
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length - 1);
     }));
 
-    it('La eliminación persiste en el servidor', fakeAsync(() => {
+    it('la eliminación persiste en el servidor', fakeAsync(() => {
       store.remove('inc-001').subscribe();
       tick();
 
@@ -196,7 +196,7 @@ describe('IncidentStore', () => {
       expect(store.getById('inc-001')).toBeUndefined();
     }));
 
-    it('Informa del error si la incidencia no existe', fakeAsync(() => {
+    it('informa del error si la incidencia no existe', fakeAsync(() => {
       let failed: Error | undefined;
       store.remove('no-existe').subscribe({ error: (e) => (failed = e) });
       tick();
@@ -209,7 +209,7 @@ describe('IncidentStore', () => {
   describe('indicadores derivados', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Cuentan el total, las críticas y las abiertas', () => {
+    it('cuentan el total, las críticas y las abiertas', () => {
       expect(store.totalCount()).toBe(MOCK_INCIDENTS.length);
       expect(store.criticalCount()).toBe(
         MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length,
@@ -217,7 +217,7 @@ describe('IncidentStore', () => {
       expect(store.openCount()).toBe(MOCK_INCIDENTS.filter((i) => i.status === 'OPEN').length);
     });
 
-    it('Se recalculan solos al eliminar', fakeAsync(() => {
+    it('se recalculan solos al eliminar', fakeAsync(() => {
       const critical = MOCK_INCIDENTS.find((i) => i.priority === 'CRITICAL')!;
 
       store.remove(critical.id).subscribe();
@@ -228,14 +228,14 @@ describe('IncidentStore', () => {
       );
     }));
 
-    it('Son de solo lectura', () => {
+    it('son de solo lectura', () => {
       expect('set' in store.totalCount).toBe(false);
       expect('update' in store.totalCount).toBe(false);
     });
   });
 
   describe('errores', () => {
-    it('Registra el mensaje cuando la carga inicial falla', fakeAsync(() => {
+    it('registra el mensaje cuando la carga inicial falla', fakeAsync(() => {
       failNextApiRequest();
       store = TestBed.inject(IncidentStore);
       tick();
@@ -247,7 +247,7 @@ describe('IncidentStore', () => {
       expect(store.loading()).toBe(false);
     }));
 
-    it('El error se puede descartar', fakeAsync(() => {
+    it('el error se puede descartar', fakeAsync(() => {
       failNextApiRequest();
       store = TestBed.inject(IncidentStore);
       tick();
@@ -258,7 +258,7 @@ describe('IncidentStore', () => {
       expect(store.error()).toBeNull();
     }));
 
-    it('Una petición correcta posterior limpia el error', fakeAsync(() => {
+    it('una petición correcta posterior limpia el error', fakeAsync(() => {
       failNextApiRequest();
       store = TestBed.inject(IncidentStore);
       tick();
@@ -271,7 +271,7 @@ describe('IncidentStore', () => {
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length);
     }));
 
-    it('Apaga el indicador de carga aunque la petición falle', fakeAsync(() => {
+    it('apaga el indicador de carga aunque la petición falle', fakeAsync(() => {
       failNextApiRequest();
       store = TestBed.inject(IncidentStore);
       tick();
@@ -283,12 +283,12 @@ describe('IncidentStore', () => {
   describe('selección', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Arranca sin nada seleccionado', () => {
+    it('arranca sin nada seleccionado', () => {
       expect(store.selectedId()).toBeNull();
       expect(store.selectedIncident()).toBeUndefined();
     });
 
-    it('Selecciona por identificador', () => {
+    it('selecciona por identificador', () => {
       store.select('inc-002');
 
       expect(store.selectedId()).toBe('inc-002');
@@ -302,7 +302,7 @@ describe('IncidentStore', () => {
       expect(store.selectedId()).toBeNull();
     });
 
-    it('Al eliminar la seleccionada, la selección se limpia', fakeAsync(() => {
+    it('al eliminar la seleccionada, la selección se limpia', fakeAsync(() => {
       store.select('inc-002');
 
       store.remove('inc-002').subscribe();
@@ -311,7 +311,7 @@ describe('IncidentStore', () => {
       expect(store.selectedId()).toBeNull();
     }));
 
-    it('Eliminar otra no toca la selección', fakeAsync(() => {
+    it('eliminar otra no toca la selección', fakeAsync(() => {
       store.select('inc-002');
 
       store.remove('inc-001').subscribe();
@@ -324,34 +324,34 @@ describe('IncidentStore', () => {
   describe('filtros', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Arranca sin filtros activos', () => {
+    it('arranca sin filtros activos', () => {
       expect(store.hasActiveFilters()).toBe(false);
       expect(store.visibleCount()).toBe(MOCK_INCIDENTS.length);
     });
 
-    it('Cambia un filtro conservando los demás', () => {
-      store.setFilters({ status: 'OPEN' });
-      store.setFilters({ priority: 'HIGH' });
+    it('cambia un filtro conservando los demás', () => {
+      store.setFilters({ status: IncidentStatusEnum.OPEN });
+      store.setFilters({ priority: IncidentPriorityEnum.HIGH });
 
       expect(store.filters()).toEqual({
-        search: '',
-        status: 'OPEN',
-        priority: 'HIGH',
+        searchTerm: '',
+        status: IncidentStatusEnum.OPEN,
+        priority: IncidentPriorityEnum.HIGH,
         category: '',
       });
     });
 
-    it('Filtra la lista visible sin tocar la colección', () => {
-      store.setFilters({ priority: 'CRITICAL' });
+    it('filtra la lista visible sin tocar la colección', () => {
+      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL });
 
-      const critical = MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length;
+      const critical = MOCK_INCIDENTS.filter((i) => i.priority === IncidentPriorityEnum.CRITICAL).length;
       expect(store.visibleCount()).toBe(critical);
       // Los indicadores siguen contando sobre el total.
       expect(store.totalCount()).toBe(MOCK_INCIDENTS.length);
     });
 
-    it('Los limpia todos de una vez', () => {
-      store.setFilters({ search: 'red', status: 'OPEN', priority: 'HIGH' });
+    it('los limpia todos de una vez', () => {
+      store.setFilters({ searchTerm: 'red', status: IncidentStatusEnum.OPEN, priority: IncidentPriorityEnum.HIGH });
 
       store.clearFilters();
 
@@ -360,10 +360,10 @@ describe('IncidentStore', () => {
     });
   });
 
-  describe('Filtro por categoría', () => {
+  describe('filtro por categoría (Día 22)', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Deriva las categorías de las propias incidencias, sin repetir y ordenadas', () => {
+    it('deriva las categorías de las propias incidencias, sin repetir y ordenadas', () => {
       const expected = [...new Set(MOCK_INCIDENTS.map((i) => i.category))].sort((a, b) =>
         a.localeCompare(b, 'es'),
       );
@@ -371,7 +371,7 @@ describe('IncidentStore', () => {
       expect(store.categories()).toEqual(expected);
     });
 
-    it('Filtra por categoría', () => {
+    it('filtra por categoría', () => {
       store.setFilters({ category: 'Hardware' });
 
       expect(store.visibleCount()).toBe(
@@ -379,13 +379,13 @@ describe('IncidentStore', () => {
       );
     });
 
-    it('Una categoría nueva aparece sola al registrarla', fakeAsync(() => {
+    it('una categoría nueva aparece sola al registrarla', fakeAsync(() => {
       store
         .create({
           title: 'Ruido en el aire acondicionado',
           description: 'Se oye desde toda la planta.',
           category: 'Climatización',
-          priority: 'LOW',
+          priority: IncidentPriorityEnum.LOW,
           reporterId: 'u-005',
         })
         .subscribe();
@@ -395,23 +395,23 @@ describe('IncidentStore', () => {
     }));
   });
 
-  describe('Ordenamiento', () => {
+  describe('ordenamiento (Día 22)', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Por defecto muestra lo más reciente primero', () => {
+    it('por defecto muestra lo más reciente primero', () => {
       const dates = store.visibleIncidents().map((i) => Date.parse(i.createdAt));
 
       expect(dates).toEqual([...dates].sort((a, b) => b - a));
     });
 
-    it('Ordena por fecha ascendente', () => {
+    it('ordena por fecha ascendente', () => {
       store.setSort({ field: 'createdAt', direction: 'asc' });
 
       const dates = store.visibleIncidents().map((i) => Date.parse(i.createdAt));
       expect(dates).toEqual([...dates].sort((a, b) => a - b));
     });
 
-    it('Ordena por prioridad de mayor a menor gravedad, no alfabéticamente', () => {
+    it('ordena por prioridad de mayor a menor gravedad, no alfabéticamente', () => {
       store.setSort({ field: 'priority', direction: 'desc' });
 
       // Alfabéticamente CRITICAL iría antes que HIGH, pero LOW antes que
@@ -423,7 +423,7 @@ describe('IncidentStore', () => {
       expect(store.visibleIncidents()[0].priority).toBe('CRITICAL');
     });
 
-    it('ToggleSort invierte la dirección si ya se ordena por ese campo', () => {
+    it('toggleSort invierte la dirección si ya se ordena por ese campo', () => {
       store.setSort({ field: 'priority', direction: 'desc' });
 
       store.toggleSort('priority');
@@ -431,7 +431,7 @@ describe('IncidentStore', () => {
       expect(store.sort()).toEqual({ field: 'priority', direction: 'asc' });
     });
 
-    it('ToggleSort con otro campo empieza descendente', () => {
+    it('toggleSort con otro campo empieza descendente', () => {
       store.setSort({ field: 'priority', direction: 'asc' });
 
       store.toggleSort('createdAt');
@@ -439,7 +439,7 @@ describe('IncidentStore', () => {
       expect(store.sort()).toEqual({ field: 'createdAt', direction: 'desc' });
     });
 
-    it('No muta la colección al ordenar', () => {
+    it('no muta la colección al ordenar', () => {
       const before = store.getAll().map((i) => i.id);
 
       store.setSort({ field: 'priority', direction: 'asc' });
@@ -449,23 +449,23 @@ describe('IncidentStore', () => {
     });
   });
 
-  describe('Paginación', () => {
+  describe('paginación (Día 22)', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('Reparte los resultados en páginas del tamaño configurado', () => {
+    it('reparte los resultados en páginas del tamaño configurado', () => {
       expect(store.pageSize()).toBe(4);
       expect(store.pagedIncidents().length).toBe(4);
       expect(store.totalPages()).toBe(2); // 5 incidencias en páginas de 4
     });
 
-    it('Na página siguiente muestra el resto', () => {
+    it('la página siguiente muestra el resto', () => {
       store.nextPage();
 
       expect(store.currentPageNumber()).toBe(2);
       expect(store.pagedIncidents().length).toBe(MOCK_INCIDENTS.length - 4);
     });
 
-    it('No se puede pasar de la última página ni bajar de la primera', () => {
+    it('no se puede pasar de la última página ni bajar de la primera', () => {
       store.goToPage(99);
       expect(store.currentPageNumber()).toBe(store.totalPages());
       expect(store.hasNextPage()).toBe(false);
@@ -475,7 +475,7 @@ describe('IncidentStore', () => {
       expect(store.hasPreviousPage()).toBe(false);
     });
 
-    it('Ninguna incidencia se repite ni se pierde entre páginas', () => {
+    it('ninguna incidencia se repite ni se pierde entre páginas', () => {
       const first = store.pagedIncidents().map((i) => i.id);
       store.nextPage();
       const second = store.pagedIncidents().map((i) => i.id);
@@ -484,16 +484,16 @@ describe('IncidentStore', () => {
       expect(new Set(all).size).toBe(MOCK_INCIDENTS.length);
     });
 
-    it('Cambiar un filtro vuelve a la primera página', () => {
+    it('cambiar un filtro vuelve a la primera página', () => {
       store.nextPage();
       expect(store.currentPageNumber()).toBe(2);
 
-      store.setFilters({ status: 'OPEN' });
+      store.setFilters({ status: IncidentStatusEnum.OPEN });
 
       expect(store.currentPageNumber()).toBe(1);
     });
 
-    it('Ordenar también vuelve a la primera página', () => {
+    it('ordenar también vuelve a la primera página', () => {
       store.nextPage();
 
       store.setSort({ field: 'priority', direction: 'asc' });
@@ -501,23 +501,23 @@ describe('IncidentStore', () => {
       expect(store.currentPageNumber()).toBe(1);
     });
 
-    it('Si un filtro deja menos páginas, la actual se recorta sola', () => {
+    it('si un filtro deja menos páginas, la actual se recorta sola', () => {
       store.nextPage();
       // Se filtra a un solo resultado: la página 2 deja de existir.
-      store.setFilters({ priority: 'CRITICAL' });
+      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL });
 
       expect(store.totalPages()).toBe(1);
       expect(store.currentPageNumber()).toBe(1);
     });
 
-    it('Con un tamaño mayor cabe todo en una página', () => {
+    it('con un tamaño mayor cabe todo en una página', () => {
       store.setPageSize(12);
 
       expect(store.totalPages()).toBe(1);
       expect(store.pagedIncidents().length).toBe(MOCK_INCIDENTS.length);
     });
 
-    it('Informa del rango mostrado', () => {
+    it('informa del rango mostrado', () => {
       expect(store.pageRange()).toEqual({ from: 1, to: 4 });
 
       store.nextPage();
@@ -525,7 +525,7 @@ describe('IncidentStore', () => {
       expect(store.pageRange()).toEqual({ from: 5, to: 5 });
     });
 
-    it('Sin resultados, el rango es cero y sigue habiendo una página', () => {
+    it('sin resultados, el rango es cero y sigue habiendo una página', () => {
       store.setFilters({ category: 'No existe esta categoría' });
 
       expect(store.visibleCount()).toBe(0);
@@ -554,28 +554,51 @@ describe('IncidentStore', () => {
       });
     }
 
-    it('Los selectores derivados tampoco', () => {
+    it('los selectores derivados tampoco', () => {
       for (const selector of [store.totalCount, store.visibleIncidents, store.selectedIncident]) {
         expect('set' in selector).toBe(false);
       }
     });
 
-    it('Modificar lo que devuelve getAll no altera el estado', () => {
+    it('escribir en el estado exige pasar por una acción', () => {
+      // Matiz importante: `private` es de TypeScript y desaparece al
+      // compilar, así que los campos internos **sí** existen en tiempo de
+      // ejecución. Lo que de verdad impide escribirlos desde fuera son dos
+      // cosas: el compilador (un componente no compila si lo intenta) y
+      // `asReadonly()`, que quita `set` y `update` de lo que se expone.
+      const exposed = store.incidents as unknown as Record<string, unknown>;
+      const internal = (store as unknown as Record<string, { set?: unknown }>)['incidentList'];
+
+      expect('set' in exposed).toBe(false);
+      // La señal interna sí es escribible: por eso no se expone nunca.
+      expect(typeof internal.set).toBe('function');
+    });
+
+    it('cambiar el estado solo surte efecto a través de las acciones', () => {
+      const before = store.filters();
+
+      store.setFilters({ status: IncidentStatusEnum.OPEN });
+
+      expect(store.filters()).not.toEqual(before);
+      expect(store.filters().status).toBe(IncidentStatusEnum.OPEN);
+    });
+
+    it('modificar lo que devuelve getAll no altera el estado', () => {
       (store.getAll() as Incident[]).length = 0;
 
       expect(store.totalCount()).toBe(MOCK_INCIDENTS.length);
     });
   });
 
-  describe('Reactividad', () => {
+  describe('reactividad', () => {
     beforeEach(fakeAsync(() => start()));
 
-    it('La señal expuesta es de solo lectura', () => {
+    it('la señal expuesta es de solo lectura', () => {
       expect('set' in store.incidents).toBe(false);
       expect('update' in store.incidents).toBe(false);
     });
 
-    it('No muta los datos simulados originales', fakeAsync(() => {
+    it('no muta los datos simulados originales', fakeAsync(() => {
       const snapshot = MOCK_INCIDENTS.map((incident) => ({ ...incident }));
 
       store.create(DRAFT).subscribe();

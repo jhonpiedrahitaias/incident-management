@@ -14,7 +14,7 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import { Incident, IncidentPriority, IncidentStatus } from '../../../../core/models/incident.model';
+import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from '../../../../core/models/incident.model';
 import { IncidentApi } from '../../../../core/api/incident-api';
 import {
   ANY,
@@ -111,7 +111,7 @@ export class IncidentList {
    * store solo recibe el resultado a través de una acción.
    */
   private readonly search = toSignal(
-    toObservable(computed(() => this.filters().search)).pipe(
+    toObservable(computed(() => this.filters().searchTerm)).pipe(
       debounceTime(SEARCH_DEBOUNCE_MS),
       map((term) => term.trim()),
       distinctUntilChanged(),
@@ -160,9 +160,9 @@ export class IncidentList {
     const params = this.route.snapshot.queryParamMap;
 
     this.store.setFilters({
-      search: params.get('q') ?? ANY,
-      status: (params.get('estado') ?? ANY) as IncidentStatus | typeof ANY,
-      priority: (params.get('prioridad') ?? ANY) as IncidentPriority | typeof ANY,
+      searchTerm: params.get('q') ?? ANY,
+      status: (params.get('estado') ?? ANY) as IncidentStatusEnum | typeof ANY,
+      priority: (params.get('prioridad') ?? ANY) as IncidentPriorityEnum | typeof ANY,
       category: params.get('categoria') ?? ANY,
     });
 
@@ -190,12 +190,12 @@ export class IncidentList {
    */
   private syncUrlWithState(): void {
     effect(() => {
-      const { search, status, priority, category } = this.store.filters();
+      const { searchTerm, status, priority, category } = this.store.filters();
       const { field, direction } = this.store.sort();
       const page = this.store.currentPageNumber();
 
       const queryParams: Params = {
-        q: search.trim() || null,
+        q: searchTerm.trim() || null,
         estado: status || null,
         prioridad: priority || null,
         categoria: category || null,
@@ -216,15 +216,15 @@ export class IncidentList {
   // --- Acciones: siempre a través del store --------------------------------
 
   protected onSearchTermChange(value: string): void {
-    this.store.setFilters({ search: value });
+    this.store.setFilters({ searchTerm: value });
   }
 
   protected onStatusFilterChange(value: string): void {
-    this.store.setFilters({ status: value as IncidentStatus | typeof ANY });
+    this.store.setFilters({ status: value as IncidentStatusEnum | typeof ANY });
   }
 
   protected onPriorityFilterChange(value: string): void {
-    this.store.setFilters({ priority: value as IncidentPriority | typeof ANY });
+    this.store.setFilters({ priority: value as IncidentPriorityEnum | typeof ANY });
   }
 
   protected onCategoryFilterChange(value: string): void {

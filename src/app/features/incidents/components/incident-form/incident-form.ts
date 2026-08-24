@@ -15,7 +15,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { IncidentDraft, IncidentPriority } from '../../../../core/models/incident.model';
+import { IncidentDraft, IncidentPriority, IncidentPriorityEnum } from '../../../../core/models/incident.model';
 import {
   forbiddenWords,
   maxItems,
@@ -29,7 +29,7 @@ interface IncidentFormControls {
   title: FormControl<string>;
   description: FormControl<string>;
   category: FormControl<string>;
-  priority: FormControl<IncidentPriority | ''>;
+  priority: FormControl<IncidentPriorityEnum | ''>;
   tags: FormArray<FormControl<string>>;
 }
 
@@ -73,7 +73,7 @@ export class IncidentForm {
       nonNullable: true,
       validators: [Validators.required, notOnlyWhitespace],
     }),
-    priority: this.formBuilder.control<IncidentPriority | ''>('', {
+    priority: this.formBuilder.control<IncidentPriorityEnum | ''>('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
@@ -165,7 +165,7 @@ export class IncidentForm {
       title: title.trim(),
       description: description.trim(),
       category: category.trim(),
-      priority: priority as IncidentPriority,
+      priority: priority as IncidentPriorityEnum,
       tags: tags.map((tag) => tag.trim()),
     });
 

@@ -4,8 +4,9 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { Incident } from '../models/incident.model';
+import { environment } from '../../../environments/environment';
 
-const BASE_URL = '/api/incidents';
+const BASE_URL = `${environment.apiBaseUrl}/incidents`;
 
 /**
  * Capa de acceso HTTP.

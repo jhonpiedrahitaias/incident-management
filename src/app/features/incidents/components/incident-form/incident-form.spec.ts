@@ -2,12 +2,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IncidentForm, IncidentFormValue } from './incident-form';
+import { IncidentPriorityEnum } from '../../../../core/models/incident.model';
 
 const VALID = {
   title: 'Fuga en el aire acondicionado',
   description: 'Gotea sobre los equipos del rack principal.',
   category: 'Infraestructura',
-  priority: 'HIGH',
+  priority: IncidentPriorityEnum.HIGH,
 };
 
 describe('IncidentForm', () => {
@@ -116,7 +117,7 @@ describe('IncidentForm', () => {
         title: VALID.title,
         description: VALID.description,
         category: VALID.category,
-        priority: 'HIGH',
+        priority: VALID.priority as IncidentPriorityEnum,
         tags: [],
       });
     });
