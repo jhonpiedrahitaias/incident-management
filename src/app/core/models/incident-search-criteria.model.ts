@@ -1,43 +1,38 @@
-import { Incident, IncidentPriority, IncidentStatus } from "./incident.model";
+import { Incident, IncidentPriority, IncidentStatus } from './incident.model';
 
-export class IncidentSearchCriteria {
-  constructor(
-    public readonly searchTerm: string = '',
-    public readonly status?: IncidentStatus,
-    public readonly priority?: IncidentPriority,
-    public readonly category?: string,
-  ) { }
+export const ANY = '';
 
-  matches(incident: Incident): boolean {
-    return (
-      this.matchesSearchTerm(incident) &&
-      this.matchesStatus(incident) &&
-      this.matchesPriority(incident) &&
-      this.matchesCategory(incident)
-    );
-  }
+//Filters
+export interface IncidentSearchCriteria {
+  readonly searchTerm: string;
+  readonly status: IncidentStatus | typeof ANY;
+  readonly priority: IncidentPriority | typeof ANY;
+  readonly category: string;
+}
 
-  private matchesSearchTerm(incident: Incident): boolean {
-    if (!this.searchTerm) {
-      return true;
-    }
+export const NO_CRITERIA: IncidentSearchCriteria = {
+  searchTerm: ANY,
+  status: ANY,
+  priority: ANY,
+  category: ANY,
+};
 
-    const term = this.searchTerm.toLowerCase();
-    return (
-      incident.title.toLowerCase().includes(term) ||
-      incident.description.toLowerCase().includes(term)
-    );
-  }
+export function hasActiveCriteria(criteria: IncidentSearchCriteria): boolean {
+  return (
+    criteria.searchTerm.trim() !== '' ||
+    criteria.status !== ANY ||
+    criteria.priority !== ANY ||
+    criteria.category !== ANY
+  );
+}
 
-  private matchesStatus(incident: Incident): boolean {
-    return !this.status || incident.status === this.status;
-  }
-
-  private matchesPriority(incident: Incident): boolean {
-    return !this.priority || incident.priority === this.priority;
-  }
-
-  private matchesCategory(incident: Incident): boolean {
-    return !this.category || incident.category === this.category;
-  }
+export function matchesLocalCriteria(
+  incident: Incident,
+  criteria: IncidentSearchCriteria,
+): boolean {
+  return (
+    (criteria.status === ANY || incident.status === criteria.status) &&
+    (criteria.priority === ANY || incident.priority === criteria.priority) &&
+    (criteria.category === ANY || incident.category === criteria.category)
+  );
 }
