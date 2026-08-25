@@ -1,4 +1,4 @@
-import { EnvironmentProviders } from '@angular/core';
+import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TestBed, tick } from '@angular/core/testing';
 import { fakeBackendInterceptor, DEMO_PASSWORD, resetFakeBackend, setFakeBackendLatency } from '../core/api/fake-backend-interceptor';
@@ -8,6 +8,9 @@ import { errorHandlingInterceptor } from '../core/http/error-handling-intercepto
 import { loadingInterceptor } from '../core/http/loading-interceptor';
 import { AuthService } from '../core/services/auth-service';
 import { IncidentStore } from '../core/state/incident-store';
+import { IncidentApi } from '../core/api/incident-api';
+import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY } from '../core/di/tokens';
+import { UserService } from '../core/services/user-service';
 
 /**
  * Utilidades para probar contra la API simulada.
@@ -23,15 +26,28 @@ import { IncidentStore } from '../core/state/incident-store';
  * contabilidad de carga y traducción de errores incluidas.
  */
 export function provideTestApi(): EnvironmentProviders {
-  return provideHttpClient(
-    withInterceptors([
-      correlationIdInterceptor,
-      authTokenInterceptor,
-      loadingInterceptor,
-      errorHandlingInterceptor,
-      fakeBackendInterceptor,
-    ]),
-  );
+  return makeEnvironmentProviders([
+    provideHttpClient(
+      withInterceptors([
+        correlationIdInterceptor,
+        authTokenInterceptor,
+        loadingInterceptor,
+        errorHandlingInterceptor,
+        fakeBackendInterceptor,
+      ]),
+    ),
+    // Los puertos se cablean igual que en `app.config.ts`. Que haya que
+    // repetirlo aquí no es una molestia: es la señal de que el puerto es
+    // real. Las pruebas montan **otro inyector**, o sea otra raíz de
+    // composición, y cada raíz elige sus adaptadores.
+    //
+    // Se usan los mismos que en producción a propósito: estas pruebas
+    // recorren la cadena HTTP completa por diseño. Un repositorio en
+    // memoria se conectaría exactamente igual, cambiando estas tres líneas.
+    { provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
+    { provide: USER_REPOSITORY, useExisting: UserService },
+    { provide: AUTH_GATEWAY, useExisting: AuthService },
+  ]);
 }
 
 /**

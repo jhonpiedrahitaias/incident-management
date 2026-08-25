@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { IncidentApi } from './incident-api';
-import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
 
 const INCIDENT: Incident = {
   id: 'inc-001',

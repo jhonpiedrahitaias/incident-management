@@ -3,13 +3,14 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
-import { Incident } from '../models/incident.model';
+import { Incident } from '../../domain/models/incident.model';
 import { environment } from '../../../environments/environment';
+import { IncidentRepository } from '../../domain/ports/incident-repository.port';
 
 const BASE_URL = `${environment.apiBaseUrl}/incidents`;
 
 /**
- * Capa de acceso HTTP.
+ * Adaptador HTTP del puerto `IncidentRepository`.
  *
  * Su única responsabilidad es **hablar con el servidor**: construir la URL,
  * elegir el verbo y tipar la respuesta. No guarda estado, no decide reglas
@@ -18,7 +19,7 @@ const BASE_URL = `${environment.apiBaseUrl}/incidents`;
 @Injectable({
   providedIn: 'root',
 })
-export class IncidentApi {
+export class IncidentApi implements IncidentRepository {
   private readonly http = inject(HttpClient);
 
   /** `GET /api/incidents` */

@@ -1,7 +1,7 @@
 //IA
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { Incident } from '../../../../core/models/incident.model';
+import { Incident } from '../../../../domain/models/incident.model';
 import { UserService } from '../../../../core/services/user-service';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time-pipe';
 

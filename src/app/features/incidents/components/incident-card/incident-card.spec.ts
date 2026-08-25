@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IncidentCard } from './incident-card';
-import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../../../core/models/incident.model';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../../../domain/models/incident.model';
 
 const INCIDENT: Incident = {
   id: 'inc-001',

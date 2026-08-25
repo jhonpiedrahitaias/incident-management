@@ -1,11 +1,12 @@
 import { Injectable, signal } from '@angular/core';
-import { User } from '../models/user.model';
+import { User } from '../../domain/models/user.model';
 import { MOCK_USERS } from '../mocks/users.mock';
+import { UserRepository } from '../../domain/ports/user-repository.port';
 
 @Injectable({
   providedIn: 'root',
 })
-export class UserService {
+export class UserService implements UserRepository {
   private readonly collection = signal<readonly User[]>(MOCK_USERS);
 
   private readonly session = signal<User>(MOCK_USERS[0]);
