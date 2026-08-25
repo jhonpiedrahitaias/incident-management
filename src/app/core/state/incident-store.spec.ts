@@ -2,7 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { IncidentStore } from './incident-store';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
-import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
+import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
 import { loadIncidents, prepareApi, provideTestApi } from '../../testing/api-testing';
 import { failNextApiRequest } from '../api/fake-backend-interceptor';
 

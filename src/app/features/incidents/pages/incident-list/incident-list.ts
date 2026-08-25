@@ -14,7 +14,7 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from '../../../../core/models/incident.model';
+import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from '../../../../domain/models/incident.model';
 import { IncidentApi } from '../../../../core/api/incident-api';
 import {
   ANY,

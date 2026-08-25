@@ -1,4 +1,4 @@
-import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from "../models/incident.model";
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from "../../domain/models/incident.model";
 
 export const MOCK_INCIDENTS: readonly Incident[] = [
   {

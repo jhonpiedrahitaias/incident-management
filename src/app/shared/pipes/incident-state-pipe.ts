@@ -1,5 +1,5 @@
 import { pipe } from "rxjs";
-import { IncidentStatus, IncidentStatusEnum } from "../../core/models/incident.model";
+import { IncidentStatus, IncidentStatusEnum } from "../../domain/models/incident.model";
 import { Pipe } from "@angular/core";
 
 const STATE_LABELS: Readonly<Record<IncidentStatusEnum, string>> = {

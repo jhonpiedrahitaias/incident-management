@@ -1,16 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { AuthResponse, Credentials, Session } from '../models/auth.model';
-import { User, UserRole } from '../models/user.model';
+import { AuthResponse, Credentials, Session } from '../../domain/models/auth.model';
+import { User, UserRole } from '../../domain/models/user.model';
 import { environment } from '../../../environments/environment';
+import { AuthGateway } from '../../domain/ports/auth-gateway.port';
 
 const STORAGE_KEY = 'incident-management.session';
 
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService {
+export class AuthService implements AuthGateway {
   private readonly http = inject(HttpClient);
 
   private readonly session = signal<Session | null>(this.restoreSession());

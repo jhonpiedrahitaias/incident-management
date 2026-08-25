@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../services/auth-service';
 import { LoadingService } from '../services/loading-service';
 import { IncidentStore } from '../state/incident-store';
-import { Incident, IncidentDraft, IncidentPriorityEnum } from '../models/incident.model';
+import { Incident, IncidentDraft, IncidentPriorityEnum } from '../../domain/models/incident.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import {
   CREDENTIALS_BY_ROLE,

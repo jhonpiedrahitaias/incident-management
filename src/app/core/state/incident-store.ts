@@ -1,15 +1,16 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { Incident, IncidentChanges, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../models/incident.model';
-import { IncidentPriority } from '../models/incident.model';
+import { Incident, IncidentChanges, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
+import { IncidentPriority } from '../../domain/models/incident.model';
 import {
   IncidentSearchCriteria,
   NO_CRITERIA,
   hasActiveCriteria,
   matchesLocalCriteria,
-} from '../models/incident-search-criteria.model';
+} from '../../domain/models/incident-search-criteria.model';
 import { IncidentApi } from '../api/incident-api';
 import { LoadingService } from '../services/loading-service';
+import { INCIDENT_REPOSITORY } from '../di/tokens';
 
 // Los criterios de búsqueda viven en el modelo, no aquí: son parte del
 // dominio, los usa también la vista y se reflejan en la URL. El store solo
@@ -18,7 +19,7 @@ export {
   ANY,
   NO_CRITERIA,
   type IncidentSearchCriteria,
-} from '../models/incident-search-criteria.model';
+} from '../../domain/models/incident-search-criteria.model';
 
 /** Campos por los que se puede ordenar. */
 export type SortField = 'createdAt' | 'priority';
@@ -77,7 +78,10 @@ export const PAGE_SIZES = [4, 8, 12] as const;
   providedIn: 'root',
 })
 export class IncidentStore {
-  private readonly api = inject(IncidentApi);
+  // Se pide el **puerto**, no la clase HTTP. El store no sabe —ni le
+  // importa— si detrás hay una API, memoria o localStorage: eso lo decide
+  // `app.config.ts`, que es el único sitio que conoce el adaptador.
+  private readonly api = inject(INCIDENT_REPOSITORY);
   private readonly loadingService = inject(LoadingService);
 
   // --- Estado privado ------------------------------------------------------

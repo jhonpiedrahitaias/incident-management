@@ -1,10 +1,10 @@
 //IA
 import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { Observable, delay, of, throwError } from 'rxjs';
-import { Incident } from '../models/incident.model';
+import { Incident } from '../../domain/models/incident.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import { MOCK_USERS } from '../mocks/users.mock';
-import { AuthResponse, Credentials } from '../models/auth.model';
+import { AuthResponse, Credentials } from '../../domain/models/auth.model';
 
 /**
  * API simulada.

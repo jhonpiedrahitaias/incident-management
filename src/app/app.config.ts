@@ -16,6 +16,10 @@ import { authTokenInterceptor } from './core/http/auth-token-interceptor';
 import { correlationIdInterceptor } from './core/http/correlation-id-interceptor';
 import { errorHandlingInterceptor } from './core/http/error-handling-interceptor';
 import { loadingInterceptor } from './core/http/loading-interceptor';
+import { AUTH_GATEWAY, INCIDENT_REPOSITORY, USER_REPOSITORY } from './core/di/tokens';
+import { IncidentApi } from './core/api/incident-api';
+import { AuthService } from './core/services/auth-service';
+import { UserService } from './core/services/user-service';
 
 // Los pipes de formato (`date`, `number`, `currency`) usan el locale activo.
 // Sin registrarlo, Angular solo conoce `en-US` y las fechas saldrían en inglés.
@@ -36,5 +40,9 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     { provide: LOCALE_ID, useValue: 'es' },
+      // --- Puertos y adaptadores ---------------------------------------------
+    { provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
+    { provide: USER_REPOSITORY, useExisting: UserService },
+    { provide: AUTH_GATEWAY, useExisting: AuthService },
   ],
 };

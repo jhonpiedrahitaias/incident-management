@@ -1,4 +1,4 @@
-import { User } from "../models/user.model";
+import { User } from "../../domain/models/user.model";
 
 export const MOCK_USERS: readonly User[] = [
   { id: 'u-001', name: 'Ana Torres', email: 'ana.torres@example.com', role: 'ADMIN' },

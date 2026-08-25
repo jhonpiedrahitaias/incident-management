@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
-import { Incident } from "../../../../core/models/incident.model";
+import { Incident } from "../../../../domain/models/incident.model";
 import { DatePipe, LowerCasePipe, TitleCasePipe, UpperCasePipe } from "@angular/common";
 import { IncidentPriorityPipe } from "../../../../shared/pipes/incident-priority-pipe";
 import { RelativeTimePipe } from "../../../../shared/pipes/relative-time-pipe";
