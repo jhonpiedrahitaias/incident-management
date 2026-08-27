@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { INCIDENT_ROUTES } from './features/incidents/incidents.routes';
-import { AuthService } from './core/services/auth-service';
+import { AuthService } from './core/infrastructure/services/auth-service';
 import { CREDENTIALS_BY_ROLE, prepareApi, provideTestApi } from './testing/api-testing';
 import { IncidentNew } from './features/incidents/pages/incident-new/incident-new';
 import { IncidentEdit } from './features/incidents/pages/incident-edit/incident-edit';

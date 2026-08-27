@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { roleGuard } from '../../core/guards/role-guard';
+import { roleGuard } from '../../core/infrastructure/guards/role-guard';
 
 export const INCIDENT_ROUTES: Routes = [
   {

@@ -1,15 +1,10 @@
-<dialog #dialog class="modal" (close)="onDialogClose()" (click)="onDialogClick($event)">
+<dialog #dialog class="modal" (close)="onDialogClose()" tabindex="0" (click)="onDialogClick($event)" (keydown.escape)="close()">
   <div class="modal-panel">
     <header class="modal-header">
       <!-- Proyección con selector: quien usa el modal decide el título. -->
       <h2 class="modal-title"><ng-content select="[modalTitle]" /></h2>
 
-      <button
-        type="button"
-        class="btn btn--icon modal-close"
-        [attr.aria-label]="closeLabel()"
-        (click)="close()"
-      >
+      <button type="button" class="btn btn--icon modal-close" [attr.aria-label]="closeLabel()" (click)="close()">
         <span aria-hidden="true">&times;</span>
       </button>
     </header>

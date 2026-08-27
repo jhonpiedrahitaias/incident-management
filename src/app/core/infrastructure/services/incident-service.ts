@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, finalize, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { Incident, IncidentChanges, IncidentDraft, IncidentStatusEnum } from '../../domain/models/incident.model';
 import { IncidentSearchCriteria } from '../../domain/models/incident-search-criteria.model';
 import { IncidentApi } from '../api/incident-api';

@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { IncidentService } from '../../../../core/services/incident-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
-import { IncidentStore } from '../../../../core/state/incident-store';
+import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 import { DashboardStats } from '../../components/dashboard-stats/dashboard-stats';

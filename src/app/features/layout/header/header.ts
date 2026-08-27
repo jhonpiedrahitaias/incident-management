@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../../core/services/auth-service';
+import { AuthService } from '../../../core/infrastructure/services/auth-service';
 import { FocusWithin } from '../../../shared/directives/focus-within';
 
 @Component({

@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { IncidentService } from '../../../../core/services/incident-service';
-import { UserService } from '../../../../core/services/user-service';
+import { UserService } from '../../../../core/infrastructure/services/user-service';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
-import { AuthService } from '../../../../core/services/auth-service';
-import { IncidentStore } from '../../../../core/state/incident-store';
+import { AuthService } from '../../../../core/infrastructure/services/auth-service';
+import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 import { IncidentActivity } from '../../components/incident-activity/incident-activity';
 import { IncidentStatePipe } from '../../../../shared/pipes/incident-state-pipe';

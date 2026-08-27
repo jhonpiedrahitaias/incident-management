@@ -1,10 +1,11 @@
-//IA
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
+
 import { AuthService } from '../services/auth-service';
 import { LoadingService } from '../services/loading-service';
+import { CREATE_INCIDENT, LIST_INCIDENTS, SESSION_STORE } from '../di/tokens';
 import { IncidentStore } from '../state/incident-store';
 import { Incident, IncidentDraft, IncidentPriorityEnum } from '../../domain/models/incident.model';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
@@ -13,12 +14,13 @@ import {
   loadIncidents,
   prepareApi,
   provideTestApi,
-} from '../../testing/api-testing';
+} from '../../../testing/api-testing';
 import { failNextApiRequest } from '../api/fake-backend-interceptor';
-import { AppHttpError, errorHandlingInterceptor } from './error-handling-interceptor';
-import { CORRELATION_ID_HEADER, correlationIdInterceptor } from './correlation-id-interceptor';
 import { authTokenInterceptor } from './auth-token-interceptor';
+import { correlationIdInterceptor, CORRELATION_ID_HEADER } from './correlation-id-interceptor';
+import { AppHttpError, errorHandlingInterceptor } from './error-handling-interceptor';
 import { loadingInterceptor } from './loading-interceptor';
+import { SessionStorageSessionStore} from '../services/session-storage-session-store';
 
 const DRAFT: IncidentDraft = {
   title: 'Fuga en el aire acondicionado',
@@ -28,29 +30,7 @@ const DRAFT: IncidentDraft = {
   reporterId: 'u-005',
 };
 
-/**
- * Pruebas de la **cadena HTTP completa**.
- *
- * Los specs de `IncidentApi` y de los interceptores comprueban cada pieza
- * por separado. Aquí se recorre el camino entero —store → API →
- * interceptores → backend— porque es donde aparecen los fallos de montaje:
- * un interceptor en el orden equivocado, un error que no llega traducido,
- * una cabecera que se pierde por el camino.
-
-
-
-  Contra el backend simulado**: consulta, creación con persistencia
-  comprobada recargando, un 404 que llega traducido al store y un 500 que
-  deja el indicador de carga apagado y el contador a cero.
-  *Cabeceras**, con `HttpTestingController`: sin sesión no se manda
-  `Authorization`; con sesión va en todas; el inicio de sesión se
-  exceptúa —pedir un token con un token no tiene sentido—; tras cerrar
-  sesión deja de mandarse; y la correlación viaja junto al token sin que
-  una pise a la otra.
-
-*/
-
-describe('Cadena HTTP de extremo a extremo', () => {
+describe('cadena HTTP de extremo a extremo', () => {
   describe('contra el backend simulado', () => {
     let store: IncidentStore;
 
@@ -59,28 +39,35 @@ describe('Cadena HTTP de extremo a extremo', () => {
       TestBed.configureTestingModule({ providers: [provideTestApi()] });
     });
 
-    it('Consulta las incidencias y las deja en el store', fakeAsync(() => {
+    it('consulta las incidencias y las deja en el store', fakeAsync(() => {
       store = loadIncidents();
 
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length);
       expect(store.error()).toBeNull();
     }));
 
-    it('Crea una incidencia y persiste en el servidor', fakeAsync(() => {
+    it('crea una incidencia y persiste en el servidor', fakeAsync(() => {
       store = loadIncidents();
 
       let created: Incident | undefined;
-      store.create(DRAFT).subscribe((incident) => (created = incident));
+      TestBed.inject(CREATE_INCIDENT).execute(DRAFT).subscribe((incident) => (created = incident));
       tick();
 
       // Se recarga desde cero: si solo estuviera en memoria, desaparecería.
-      store.load();
+      TestBed.inject(LIST_INCIDENTS)
+        .execute()
+        .subscribe({
+          error: (failure: Error) => {
+            store.markLoaded();
+            store.setError(failure.message);
+          },
+        });
       tick();
 
       expect(store.getById(created!.id)?.title).toBe(DRAFT.title);
     }));
 
-    it('Un 404 llega al store con mensaje legible, no como código', fakeAsync(() => {
+    it('un 404 llega al store con mensaje legible, no como código', fakeAsync(() => {
       store = loadIncidents();
 
       let failure: Error | undefined;
@@ -98,12 +85,11 @@ describe('Cadena HTTP de extremo a extremo', () => {
       expect(store.error()).toBe(failure!.message);
     }));
 
-    it('Un 500 deja el indicador de carga apagado', fakeAsync(() => {
+    it('un 500 deja el indicador de carga apagado', fakeAsync(() => {
       const loadingService = TestBed.inject(LoadingService);
       failNextApiRequest();
 
-      store = TestBed.inject(IncidentStore);
-      tick();
+      store = loadIncidents();
 
       expect(store.error()).toBeTruthy();
       expect(loadingService.loading()).toBe(false);
@@ -111,7 +97,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
     }));
   });
 
-  describe('Cabeceras que añaden los interceptores', () => {
+  describe('cabeceras que añaden los interceptores', () => {
     let http: HttpClient;
     let backend: HttpTestingController;
     let authService: AuthService;
@@ -129,6 +115,10 @@ describe('Cadena HTTP de extremo a extremo', () => {
             ]),
           ),
           provideHttpClientTesting(),
+          // Este bloque monta su propio inyector para controlar la cadena de
+          // interceptores, así que tiene que cablear también el puerto de
+          // sesión: cada raíz de composición elige sus adaptadores.
+          { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
         ],
       });
 
@@ -139,7 +129,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
 
     afterEach(() => backend.verify());
 
-    it('Sin sesión no se manda cabecera de autorización', () => {
+    it('sin sesión no se manda cabecera de autorización', () => {
       http.get('/api/incidents').subscribe();
 
       const request = backend.expectOne('/api/incidents');
@@ -147,7 +137,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
       request.flush([]);
     });
 
-    it('Con sesión, cada petición lleva el token', async () => {
+    it('con sesión, cada petición lleva el token', async () => {
       const token = await signIn();
 
       http.get('/api/incidents').subscribe();
@@ -157,7 +147,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
       request.flush([]);
     });
 
-    it('El inicio de sesión no lleva token: es la petición que lo pide', async () => {
+    it('el inicio de sesión no lleva token: es la petición que lo pide', async () => {
       await signIn();
 
       http.post('/api/auth/login', {}).subscribe({ error: () => undefined });
@@ -167,7 +157,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
       request.flush({});
     });
 
-    it('Tras cerrar sesión deja de mandarse', async () => {
+    it('tras cerrar sesión deja de mandarse', async () => {
       await signIn();
       authService.logout();
 
@@ -178,7 +168,7 @@ describe('Cadena HTTP de extremo a extremo', () => {
       request.flush([]);
     });
 
-    it('La correlación viaja junto al token, sin pisarse', async () => {
+    it('la correlación viaja junto al token, sin pisarse', async () => {
       await signIn();
 
       http.get('/api/incidents').subscribe();

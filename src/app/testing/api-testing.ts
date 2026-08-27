@@ -1,16 +1,20 @@
-import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
+import { EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TestBed, tick } from '@angular/core/testing';
-import { fakeBackendInterceptor, DEMO_PASSWORD, resetFakeBackend, setFakeBackendLatency } from '../core/api/fake-backend-interceptor';
-import { authTokenInterceptor } from '../core/http/auth-token-interceptor';
-import { correlationIdInterceptor } from '../core/http/correlation-id-interceptor';
-import { errorHandlingInterceptor } from '../core/http/error-handling-interceptor';
-import { loadingInterceptor } from '../core/http/loading-interceptor';
-import { AuthService } from '../core/services/auth-service';
-import { IncidentStore } from '../core/state/incident-store';
-import { IncidentApi } from '../core/api/incident-api';
-import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY } from '../core/di/tokens';
-import { UserService } from '../core/services/user-service';
+import { fakeBackendInterceptor, DEMO_PASSWORD, resetFakeBackend, setFakeBackendLatency } from '../core/infrastructure/api/fake-backend-interceptor';
+import { authTokenInterceptor } from '../core/infrastructure/http/auth-token-interceptor';
+import { correlationIdInterceptor } from '../core/infrastructure/http/correlation-id-interceptor';
+import { errorHandlingInterceptor } from '../core/infrastructure/http/error-handling-interceptor';
+import { loadingInterceptor } from '../core/infrastructure/http/loading-interceptor';
+import { AuthService } from '../core/infrastructure/services/auth-service';
+import { IncidentStore } from '../core/infrastructure/state/incident-store';
+import { IncidentApi } from '../core/infrastructure/api/incident-api';
+import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS } from '../core/infrastructure/di/tokens';
+import { UserService } from '../core/infrastructure/services/user-service';
+import { CreateIncidentUseCase } from '../core/application/use-cases/create-incident.use-case';
+import { ListIncidentsUseCase } from '../core/application/use-cases/list-incidents.use-case';
+import { UpdateIncidentStatusUseCase } from '../core/application/use-cases/update-incident-status.use-case';
+import { SessionStorageSessionStore } from '../core/infrastructure/services/session-storage-session-store';
 
 /**
  * Utilidades para probar contra la API simulada.
@@ -47,6 +51,23 @@ export function provideTestApi(): EnvironmentProviders {
     { provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
     { provide: USER_REPOSITORY, useExisting: UserService },
     { provide: AUTH_GATEWAY, useExisting: AuthService },
+    { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
+    { provide: INCIDENT_CACHE, useExisting: IncidentStore },
+    {
+      provide: CREATE_INCIDENT,
+      useFactory: () =>
+        new CreateIncidentUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+    {
+      provide: LIST_INCIDENTS,
+      useFactory: () =>
+        new ListIncidentsUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+    {
+      provide: UPDATE_INCIDENT_STATUS,
+      useFactory: () =>
+        new UpdateIncidentStatusUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
   ]);
 }
 
@@ -94,6 +115,16 @@ export function prepareApi(): void {
  */
 export function loadIncidents(): IncidentStore {
   const store = TestBed.inject(IncidentStore);
+  store.clearError();
+
+  TestBed.inject(LIST_INCIDENTS)
+    .execute()
+    .subscribe({
+      error: (failure: Error) => {
+        store.markLoaded();
+        store.setError(failure.message);
+      },
+    });
   tick();
 
   return store;

@@ -3,7 +3,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { IncidentStore } from './incident-store';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
-import { loadIncidents, prepareApi, provideTestApi } from '../../testing/api-testing';
+import { loadIncidents, prepareApi, provideTestApi } from '../../../testing/api-testing';
 import { failNextApiRequest } from '../api/fake-backend-interceptor';
 
 const DRAFT: IncidentDraft = {
@@ -91,7 +91,7 @@ describe('IncidentStore', () => {
       tick();
 
       expect(created!.id).toBe('inc-006');
-      expect(created!.status).toBe('OPEN');
+      expect(created!.status).toBe(IncidentStatusEnum.OPEN);
       expect(created!.createdAt).toBe(created!.updatedAt);
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length + 1);
     }));
@@ -175,6 +175,32 @@ describe('IncidentStore', () => {
     }));
   });
 
+  describe('cambio de estado', () => {
+    beforeEach(fakeAsync(() => start()));
+
+    it('cambia el estado y lo refleja en la colección', fakeAsync(() => {
+      const original = MOCK_INCIDENTS[0];
+
+      store.changeStatus(original.id, IncidentStatusEnum.RESOLVED).subscribe();
+      tick();
+
+      expect(store.getById(original.id)!.status).toBe(IncidentStatusEnum.RESOLVED);
+    }));
+
+    it('no toca ningún otro campo', fakeAsync(() => {
+      const original = MOCK_INCIDENTS[0];
+
+      store.changeStatus(original.id, IncidentStatusEnum.CLOSED).subscribe();
+      tick();
+
+      // La ventaja sobre `update()`: aunque quisiera, no puede cambiar más.
+      const saved = store.getById(original.id)!;
+      expect(saved.title).toBe(original.title);
+      expect(saved.priority).toBe(original.priority);
+      expect(saved.createdAt).toBe(original.createdAt);
+    }));
+  });
+
   describe('eliminación', () => {
     beforeEach(fakeAsync(() => start()));
 
@@ -212,19 +238,19 @@ describe('IncidentStore', () => {
     it('cuentan el total, las críticas y las abiertas', () => {
       expect(store.totalCount()).toBe(MOCK_INCIDENTS.length);
       expect(store.criticalCount()).toBe(
-        MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length,
+        MOCK_INCIDENTS.filter((i) => i.priority === IncidentPriorityEnum.CRITICAL).length,
       );
-      expect(store.openCount()).toBe(MOCK_INCIDENTS.filter((i) => i.status === 'OPEN').length);
+      expect(store.openCount()).toBe(MOCK_INCIDENTS.filter((i) => i.status === IncidentStatusEnum.OPEN).length);
     });
 
     it('se recalculan solos al eliminar', fakeAsync(() => {
-      const critical = MOCK_INCIDENTS.find((i) => i.priority === 'CRITICAL')!;
+      const critical = MOCK_INCIDENTS.find((i) => i.priority === IncidentPriorityEnum.CRITICAL)!;
 
       store.remove(critical.id).subscribe();
       tick();
 
       expect(store.criticalCount()).toBe(
-        MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length - 1,
+        MOCK_INCIDENTS.filter((i) => i.priority === IncidentPriorityEnum.CRITICAL).length - 1,
       );
     }));
 
@@ -420,7 +446,7 @@ describe('IncidentStore', () => {
       const ranks = store.visibleIncidents().map((i) => rank[i.priority]);
 
       expect(ranks).toEqual([...ranks].sort((a, b) => b - a));
-      expect(store.visibleIncidents()[0].priority).toBe('CRITICAL');
+      expect(store.visibleIncidents()[0].priority).toBe(IncidentPriorityEnum.CRITICAL);
     });
 
     it('toggleSort invierte la dirección si ya se ordena por ese campo', () => {
@@ -504,7 +530,7 @@ describe('IncidentStore', () => {
     it('si un filtro deja menos páginas, la actual se recorta sola', () => {
       store.nextPage();
       // Se filtra a un solo resultado: la página 2 deja de existir.
-      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL });
+      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL});
 
       expect(store.totalPages()).toBe(1);
       expect(store.currentPageNumber()).toBe(1);
@@ -577,7 +603,7 @@ describe('IncidentStore', () => {
     it('cambiar el estado solo surte efecto a través de las acciones', () => {
       const before = store.filters();
 
-      store.setFilters({ status: IncidentStatusEnum.OPEN });
+      store.setFilters({ status: IncidentStatusEnum.OPEN});
 
       expect(store.filters()).not.toEqual(before);
       expect(store.filters().status).toBe(IncidentStatusEnum.OPEN);

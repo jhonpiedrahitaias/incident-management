@@ -1,10 +1,10 @@
 //IA
 
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Incident } from '../../domain/models/incident.model';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { IncidentRepository } from '../../domain/ports/incident-repository.port';
 
 const BASE_URL = `${environment.apiBaseUrl}/incidents`;

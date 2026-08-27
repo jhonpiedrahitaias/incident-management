@@ -38,3 +38,26 @@ export type IncidentDraft = Omit<Incident, 'id' | 'status' | 'createdAt' | 'upda
 
 // El tipo IncidentSearchCriteria representa los criterios de búsqueda que se pueden utilizar para filtrar la lista de incidencias. Contiene campos opcionales para el término de búsqueda, el estado, la prioridad y la categoría de las incidencias. Si un campo es undefined, significa que no se está aplicando ningún filtro para ese criterio.
 export type IncidentChanges = Partial<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>>;
+
+/** Estado con el que nace toda incidencia. */
+export const INITIAL_STATUS: IncidentStatusEnum = IncidentStatusEnum.OPEN;
+
+/**
+ * Siguiente identificador de la serie: `inc-001`, `inc-002`, …
+ *
+ * Es una función pura sobre las incidencias existentes: mismo listado, mismo
+ * resultado. Estaba dentro del store, que es una clase de Angular; aquí se
+ * puede probar sin montar nada.
+ *
+ * > Con un servidor real esto **no debería existir**: quien asigna
+ * > identificadores es quien guarda, porque es el único que puede garantizar
+ * > que no se repitan. Está aquí porque el backend simulado no lo hace.
+ */
+export function nextIncidentId(incidents: readonly Incident[]): string {
+  const highest = incidents.reduce((max, incident) => {
+    const value = Number.parseInt(incident.id.replace(/\D/g, ''), 10);
+    return Number.isNaN(value) ? max : Math.max(max, value);
+  }, 0);
+
+  return `inc-${String(highest + 1).padStart(3, '0')}`;
+}

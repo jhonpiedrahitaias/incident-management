@@ -14,21 +14,22 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from '../../../../domain/models/incident.model';
-import { IncidentApi } from '../../../../core/api/incident-api';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../../../core/domain/models/incident.model';
+import { IncidentApi } from '../../../../core/infrastructure/api/incident-api';
 import {
   ANY,
   IncidentStore,
   PAGE_SIZES,
   SortDirection,
   SortField,
-} from '../../../../core/state/incident-store';
+} from '../../../../core/infrastructure/state/incident-store';
 import { IncidentCard } from '../../components/incident-card/incident-card';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
+import { LIST_INCIDENTS } from '../../../../core/infrastructure/di/tokens';
 
 /** Espera antes de consultar al servidor, en milisegundos. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -54,6 +55,7 @@ const AUTO_REFRESH_MS = 30_000;
 })
 export class IncidentList {
   private readonly store = inject(IncidentStore);
+  private readonly listIncidents = inject(LIST_INCIDENTS);
   private readonly incidentApi = inject(IncidentApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
@@ -280,7 +282,7 @@ export class IncidentList {
   }
 
   protected reload(): void {
-    this.store.load();
+    this.reloadIncidents();
   }
 
   protected toggleAutoRefresh(): void {
@@ -289,10 +291,6 @@ export class IncidentList {
 
   // --- Ciclo de vida -------------------------------------------------------
 
-  /**
-   * Temporizador controlado: el `interval` solo existe mientras el refresco
-   * está activo, y `takeUntilDestroyed` lo corta con el componente.
-   */
   private startAutoRefresh(): void {
     toObservable(this.autoRefresh)
       .pipe(
@@ -300,12 +298,22 @@ export class IncidentList {
         filter(() => !this.loading()),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.store.load());
+      .subscribe(() => this.reloadIncidents());
   }
 
-  /** `addEventListener` no lo limpia Angular: la baja se registra a mano. */
+  private reloadIncidents(): void {
+    this.store.clearError();
+
+    this.listIncidents.execute().subscribe({
+      error: (failure: Error) => {
+        this.store.markLoaded();
+        this.store.setError(failure.message);
+      },
+    });
+  }
+
   private reloadWhenBackOnline(): void {
-    const onOnline = () => this.store.load();
+    const onOnline = () => this.reloadIncidents();
 
     window.addEventListener('online', onOnline);
     this.destroyRef.onDestroy(() => window.removeEventListener('online', onOnline));
