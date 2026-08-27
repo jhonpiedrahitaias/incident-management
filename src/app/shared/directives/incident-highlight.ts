@@ -1,5 +1,5 @@
 import { Directive, computed, input } from '@angular/core';
-import { IncidentPriority } from '../../domain/models/incident.model';
+import { IncidentPriority } from '../../core/domain/models/incident.model';
 
 @Directive({
   selector: '[appIncidentHighlight]',

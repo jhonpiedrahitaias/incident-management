@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { IncidentStore } from '../../../../core/state/incident-store';
-import { IncidentStatus, IncidentStatusEnum } from '../../../../domain/models/incident.model';
+import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
+import { IncidentStatus, IncidentStatusEnum } from '../../../../core/domain/models/incident.model';
 
 /** Etiqueta legible de cada estado, para el desglose. */
 const STATUS_LABELS: Readonly<Record<IncidentStatus, string>> = {

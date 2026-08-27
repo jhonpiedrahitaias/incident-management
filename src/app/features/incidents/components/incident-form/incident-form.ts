@@ -15,7 +15,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { IncidentDraft, IncidentPriority, IncidentPriorityEnum } from '../../../../domain/models/incident.model';
+import { IncidentDraft, IncidentPriorityEnum } from '../../../../core/domain/models/incident.model';
 import {
   forbiddenWords,
   maxItems,

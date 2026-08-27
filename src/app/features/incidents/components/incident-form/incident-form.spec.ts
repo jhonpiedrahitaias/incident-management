@@ -2,7 +2,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IncidentForm, IncidentFormValue } from './incident-form';
-import { IncidentPriorityEnum } from '../../../../domain/models/incident.model';
+import { IncidentPriorityEnum } from '../../../../core/domain/models/incident.model';
 
 const VALID = {
   title: 'Fuga en el aire acondicionado',
@@ -229,9 +229,6 @@ describe('IncidentForm', () => {
     );
   }
 
-  function tagInputs(): HTMLInputElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('.incident-form-tag input'));
-  }
 
   // --- utilidades ----------------------------------------------------------
 

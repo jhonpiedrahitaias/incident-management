@@ -1,7 +1,7 @@
 //IA
 
 import { IncidentPriorityPipe } from './incident-priority-pipe';
-import { IncidentPriority } from '../../domain/models/incident.model';
+import { IncidentPriority } from '../../core/domain/models/incident.model';
 
 describe('IncidentPriorityPipe', () => {
   let pipe: IncidentPriorityPipe;

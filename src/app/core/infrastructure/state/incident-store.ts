@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { Incident, IncidentChanges, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
+import { Incident, IncidentChanges, IncidentPriorityEnum } from '../../domain/models/incident.model';
+import { IncidentCache } from '../../domain/ports/incident-cache.port';
 import { IncidentPriority } from '../../domain/models/incident.model';
 import {
   IncidentSearchCriteria,
@@ -8,9 +9,8 @@ import {
   hasActiveCriteria,
   matchesLocalCriteria,
 } from '../../domain/models/incident-search-criteria.model';
-import { IncidentApi } from '../api/incident-api';
-import { LoadingService } from '../services/loading-service';
 import { INCIDENT_REPOSITORY } from '../di/tokens';
+import { LoadingService } from '../services/loading-service';
 
 // Los criterios de búsqueda viven en el modelo, no aquí: son parte del
 // dominio, los usa también la vista y se reflejan en la URL. El store solo
@@ -41,7 +41,7 @@ const DEFAULT_SORT: IncidentSort = { field: 'createdAt', direction: 'desc' };
  * significa nada. Este mapa define el orden **de gravedad**, que es el que
  * el usuario espera.
  */
-const PRIORITY_RANK: Readonly<Record<IncidentPriority, number>> = {
+const PRIORITY_RANK: Readonly<Record<IncidentPriorityEnum, number>> = {
   LOW: 1,
   MEDIUM: 2,
   HIGH: 3,
@@ -77,12 +77,13 @@ export const PAGE_SIZES = [4, 8, 12] as const;
 @Injectable({
   providedIn: 'root',
 })
-export class IncidentStore {
+export class IncidentStore implements IncidentCache {
   // Se pide el **puerto**, no la clase HTTP. El store no sabe —ni le
   // importa— si detrás hay una API, memoria o localStorage: eso lo decide
   // `app.config.ts`, que es el único sitio que conoce el adaptador.
   private readonly api = inject(INCIDENT_REPOSITORY);
   private readonly loadingService = inject(LoadingService);
+
 
   // --- Estado privado ------------------------------------------------------
   //
@@ -123,11 +124,11 @@ export class IncidentStore {
   readonly totalCount = computed(() => this.incidentList().length);
 
   readonly criticalCount = computed(
-    () => this.incidentList().filter((incident) => incident.priority === IncidentPriorityEnum.CRITICAL).length,
+    () => this.incidentList().filter((incident) => incident.priority === 'CRITICAL').length,
   );
 
   readonly openCount = computed(
-    () => this.incidentList().filter((incident) => incident.status === IncidentStatusEnum.OPEN).length,
+    () => this.incidentList().filter((incident) => incident.status === 'OPEN').length,
   );
 
   readonly hasActiveFilters = computed(() => hasActiveCriteria(this.activeFilters()));
@@ -212,8 +213,34 @@ export class IncidentStore {
     return { from, to: Math.min(from + size - 1, total) };
   });
 
-  constructor() {
-    this.load();
+  // --- IncidentCache: el modelo de lectura ---------------------------------
+  //
+  // Lo llaman los casos de uso a través del puerto, no directamente. Son
+  // asignaciones sin lógica a propósito: quién decide **qué** se guarda es el
+  // caso de uso; el store solo lo refleja para que la vista lo vea.
+
+  setAll(incidents: readonly Incident[]): void {
+    this.incidentList.set(incidents);
+    this.initialized.set(true);
+  }
+
+  add(incident: Incident): void {
+    this.incidentList.update((current) => [...current, incident]);
+  }
+
+  replace(incident: Incident): void {
+    this.incidentList.update((current) =>
+      current.map((candidate) => (candidate.id === incident.id ? incident : candidate)),
+    );
+  }
+
+  snapshot(): readonly Incident[] {
+    return this.incidentList();
+  }
+
+  /** Marca la carga como terminada aunque haya fallado. */
+  markLoaded(): void {
+    this.initialized.set(true);
   }
 
   // --- Acciones ------------------------------------------------------------
@@ -221,32 +248,7 @@ export class IncidentStore {
   // La única forma de cambiar el estado. Cada una describe una intención,
   // no una asignación: `select(id)`, no `setSelectedId(id)`.
 
-  /** Recarga la colección desde el servidor. */
-  load(): void {
-    this.track(this.api.getAll()).subscribe({
-      next: (incidents) => {
-        this.incidentList.set(incidents);
-        this.initialized.set(true);
-      },
-      error: () => this.initialized.set(true),
-    });
-  }
 
-  /** Registra una incidencia. El id, las fechas y el estado los pone aquí. */
-  create(draft: IncidentDraft): Observable<Incident> {
-    const now = new Date().toISOString();
-    const incident: Incident = {
-      ...draft,
-      id: this.nextId(),
-      status: draft.status ?? IncidentStatusEnum.OPEN,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    return this.track(this.api.create(incident)).pipe(
-      tap((created) => this.incidentList.update((current) => [...current, created])),
-    );
-  }
 
   /** Aplica cambios parciales a una incidencia ya registrada. */
   update(id: string, changes: IncidentChanges): Observable<Incident> {
@@ -272,6 +274,7 @@ export class IncidentStore {
       ),
     );
   }
+
 
   /** Elimina una incidencia. */
   remove(id: string): Observable<void> {
@@ -403,13 +406,4 @@ export class IncidentStore {
     });
   }
 
-  /** Siguiente identificador correlativo (`inc-006`, `inc-007`, …). */
-  private nextId(): string {
-    const highest = this.incidentList().reduce((max, incident) => {
-      const value = Number.parseInt(incident.id.replace(/\D/g, ''), 10);
-      return Number.isNaN(value) ? max : Math.max(max, value);
-    }, 0);
-
-    return `inc-${String(highest + 1).padStart(3, '0')}`;
-  }
 }

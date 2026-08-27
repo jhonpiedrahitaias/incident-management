@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { AuthService } from '../../../../core/services/auth-service';
-import { UserService } from '../../../../core/services/user-service';
+import { AuthService } from '../../../../core/infrastructure/services/auth-service';
+import { UserService } from '../../../../core/infrastructure/services/user-service';
 
 @Component({
   selector: 'app-admin-users',

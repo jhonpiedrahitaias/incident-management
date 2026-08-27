@@ -1,11 +1,11 @@
 import { TestBed, fakeAsync } from '@angular/core/testing';
-import { Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
+import { RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { authGuard } from './auth-guard';
 import { roleGuard } from './role-guard';
 import { AuthService } from '../services/auth-service';
-import { CREDENTIALS_BY_ROLE, prepareApi, provideTestApi } from '../../testing/api-testing';
+import { CREDENTIALS_BY_ROLE, prepareApi, provideTestApi } from '../../../testing/api-testing';
 
 /**
  * Pruebas unitarias de los guards.

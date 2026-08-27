@@ -1,4 +1,4 @@
-import { Incident, IncidentPriority, IncidentPriorityEnum, IncidentStatus, IncidentStatusEnum } from './incident.model';
+import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from './incident.model';
 
 export const ANY = '';
 

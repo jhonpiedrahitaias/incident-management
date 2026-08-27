@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signa
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService } from '../../../../core/services/auth-service';
-import { LoadingService } from '../../../../core/services/loading-service';
+import { AuthService } from '../../../../core/infrastructure/services/auth-service';
+import { LoadingService } from '../../../../core/infrastructure/services/loading-service';
 import { notOnlyWhitespace } from '../../../../shared/validators/incident-validators';
 
 interface LoginFormControls {

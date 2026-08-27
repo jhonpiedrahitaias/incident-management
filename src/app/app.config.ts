@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  inject,
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
@@ -11,15 +12,20 @@ import localeEs from '@angular/common/locales/es';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
-import { fakeBackendInterceptor } from './core/api/fake-backend-interceptor';
-import { authTokenInterceptor } from './core/http/auth-token-interceptor';
-import { correlationIdInterceptor } from './core/http/correlation-id-interceptor';
-import { errorHandlingInterceptor } from './core/http/error-handling-interceptor';
-import { loadingInterceptor } from './core/http/loading-interceptor';
-import { AUTH_GATEWAY, INCIDENT_REPOSITORY, USER_REPOSITORY } from './core/di/tokens';
-import { IncidentApi } from './core/api/incident-api';
-import { AuthService } from './core/services/auth-service';
-import { UserService } from './core/services/user-service';
+import { fakeBackendInterceptor } from './core/infrastructure/api/fake-backend-interceptor';
+import { authTokenInterceptor } from './core/infrastructure/http/auth-token-interceptor';
+import { correlationIdInterceptor } from './core/infrastructure/http/correlation-id-interceptor';
+import { errorHandlingInterceptor } from './core/infrastructure/http/error-handling-interceptor';
+import { loadingInterceptor } from './core/infrastructure/http/loading-interceptor';
+import { AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, INCIDENT_REPOSITORY, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, USER_REPOSITORY } from './core/infrastructure/di/tokens';
+import { IncidentApi } from './core/infrastructure/api/incident-api';
+import { AuthService } from './core/infrastructure/services/auth-service';
+import { UserService } from './core/infrastructure/services/user-service';
+import { CreateIncidentUseCase } from './core/application/use-cases/create-incident.use-case';
+import { ListIncidentsUseCase } from './core/application/use-cases/list-incidents.use-case';
+import { UpdateIncidentStatusUseCase } from './core/application/use-cases/update-incident-status.use-case';
+import { SessionStorageSessionStore } from './core/infrastructure/services/session-storage-session-store';
+import { IncidentStore } from './core/infrastructure/state/incident-store';
 
 // Los pipes de formato (`date`, `number`, `currency`) usan el locale activo.
 // Sin registrarlo, Angular solo conoce `en-US` y las fechas saldrían en inglés.
@@ -40,9 +46,29 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     { provide: LOCALE_ID, useValue: 'es' },
-      // --- Puertos y adaptadores ---------------------------------------------
+    // --- Puertos y adaptadores ---------------------------------------------
     { provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
     { provide: USER_REPOSITORY, useExisting: UserService },
     { provide: AUTH_GATEWAY, useExisting: AuthService },
+    { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
+    // El store es quien mantiene el modelo de lectura en memoria.
+    { provide: INCIDENT_CACHE, useExisting: IncidentStore },
+
+    // --- Casos de uso ------------------------------------------------------
+    {
+      provide: CREATE_INCIDENT,
+      useFactory: () =>
+        new CreateIncidentUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+    {
+      provide: LIST_INCIDENTS,
+      useFactory: () =>
+        new ListIncidentsUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+    {
+      provide: UPDATE_INCIDENT_STATUS,
+      useFactory: () =>
+        new UpdateIncidentStatusUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
   ],
 };

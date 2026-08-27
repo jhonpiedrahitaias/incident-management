@@ -43,7 +43,10 @@ module.exports = defineConfig([
     // Se aplica también a los `.spec.ts`: el dominio se prueba sin TestBed.
     // Si una prueba de dominio necesita Angular, lo que hay que revisar es el
     // dominio.
-    files: ["src/app/core/models/**/*.ts", "src/app/core/ports/**/*.ts"],
+    files: [
+      "src/app/core/domain/**/*.ts",
+      "src/app/core/application/**/*.ts",
+    ],
     rules: {
       "@typescript-eslint/no-restricted-imports": [
         "error",
@@ -52,9 +55,18 @@ module.exports = defineConfig([
             {
               group: ["@angular/*", "@angular/**"],
               message:
-                "La capa de dominio (models/ y ports/) no puede importar Angular. " +
-                "Si necesitas un InjectionToken, va en core/di/tokens.ts. " +
+                "core/domain/ y core/application/ no pueden importar Angular. " +
+                "Si necesitas un InjectionToken, va en core/infrastructure/di/. " +
                 "Ver docs/arquitectura-hexagonal.md.",
+            },
+            {
+              // Un caso de uso que sabe de HTTP ya no depende de un puerto:
+              // depende de un transporte.
+              group: ["**/infrastructure/**"],
+              message:
+                "El dominio y los casos de uso dependen de puertos, no de " +
+                "adaptadores. Importa la interfaz de core/domain/ports/, nunca " +
+                "nada de core/infrastructure/.",
             },
           ],
         },

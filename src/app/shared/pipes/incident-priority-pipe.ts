@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { IncidentPriority, IncidentPriorityEnum } from '../../domain/models/incident.model';
+import { IncidentPriorityEnum } from '../../core/domain/models/incident.model';
 
 const PRIORITY_LABELS: Readonly<Record<IncidentPriorityEnum, string>> = {
   LOW: 'Baja',

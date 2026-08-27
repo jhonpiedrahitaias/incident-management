@@ -3,8 +3,8 @@ import { Router, provideRouter } from '@angular/router';
 import { loadIncidents, prepareApi, provideTestApi } from '../../../../testing/api-testing';
 
 import { IncidentNew } from './incident-new';
-import { IncidentStore } from '../../../../core/state/incident-store';
-import { UserService } from '../../../../core/services/user-service';
+import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
+import { UserService } from '../../../../core/infrastructure/services/user-service';
 
 describe('IncidentNew', () => {
   let component: IncidentNew;

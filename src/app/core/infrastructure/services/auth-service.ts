@@ -3,18 +3,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse, Credentials, Session } from '../../domain/models/auth.model';
 import { User, UserRole } from '../../domain/models/user.model';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { AuthGateway } from '../../domain/ports/auth-gateway.port';
-
-const STORAGE_KEY = 'incident-management.session';
+import { SESSION_STORE } from '../di/tokens';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService implements AuthGateway {
   private readonly http = inject(HttpClient);
-
-  private readonly session = signal<Session | null>(this.restoreSession());
+  private readonly sessionStore = inject(SESSION_STORE);
+  private readonly session = signal<Session | null>(this.sessionStore.read());
   readonly currentUser = computed<User | null>(() => this.session()?.user ?? null);
   readonly token = computed<string | null>(() => this.session()?.token ?? null);
   readonly isAuthenticated = computed(() => this.session() !== null);
@@ -29,13 +28,13 @@ export class AuthService implements AuthGateway {
 
   login(credentials: Credentials): Observable<AuthResponse> {
     return this.http
-  .post<AuthResponse>(`${environment.apiBaseUrl}/auth/login`, credentials)
+      .post<AuthResponse>(`${environment.apiBaseUrl}/auth/login`, credentials)
       .pipe(tap((response) => this.startSession(response)));
   }
 
   logout(): void {
     this.session.set(null);
-    this.storage?.removeItem(STORAGE_KEY);
+    this.sessionStore.clear();
   }
 
   private startSession(response: AuthResponse): void {
@@ -46,32 +45,6 @@ export class AuthService implements AuthGateway {
     };
 
     this.session.set(session);
-    this.storage?.setItem(STORAGE_KEY, JSON.stringify(session));
-  }
-
-  private restoreSession(): Session | null {
-    const raw = this.storage?.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      const session = JSON.parse(raw) as Session;
-
-      if (!session?.token || !session?.user || session.expiresAt <= Date.now()) {
-        this.storage?.removeItem(STORAGE_KEY);
-        return null;
-      }
-
-      return session;
-    } catch {
-      this.storage?.removeItem(STORAGE_KEY);
-      return null;
-    }
-  }
-
-  private get storage(): Storage | null {
-    return typeof sessionStorage !== 'undefined' ? sessionStorage : null;
+    this.sessionStore.save(session);
   }
 }

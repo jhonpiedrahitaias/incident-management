@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IncidentForm, IncidentFormValue } from '../../components/incident-form/incident-form';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { IncidentStore } from '../../../../core/state/incident-store';
+import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 
 @Component({
