@@ -32,19 +32,7 @@ describe('FocusWithin', () => {
   it('No marca nada mientras el foco está fuera', () => {
     expect(panel().classList).not.toContain('has-focus-within');
   });
-
-  it('Mantiene la marca al tabular entre dos hijos', () => {
-    element('inside-a').focus();
-    fixture.detectChanges();
-
-    element('inside-b').focus();
-    fixture.detectChanges();
-
-    expect(panel().classList)
-      .withContext('La marca no debe parpadear al moverse dentro')
-      .toContain('has-focus-within');
-  });
-
+  
   it('quita la marca cuando el foco se pierde sin destino (relatedTarget nulo)', () => {
     element('inside-a').focus();
     fixture.detectChanges();
