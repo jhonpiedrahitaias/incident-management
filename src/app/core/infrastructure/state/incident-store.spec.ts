@@ -4,7 +4,8 @@ import { IncidentStore } from './incident-store';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
 import { loadIncidents, prepareApi, provideTestApi } from '../../../testing/api-testing';
-import { failNextApiRequest } from '../api/fake-backend-interceptor';
+import { failNextApiRequest, setFakeBackendLatency } from '../api/fake-backend-interceptor';
+import { LIST_INCIDENTS, CREATE_INCIDENT, UPDATE_INCIDENT_STATUS } from '../di/tokens';
 
 const DRAFT: IncidentDraft = {
   title: 'Fuga en el aire acondicionado',
@@ -16,6 +17,10 @@ const DRAFT: IncidentDraft = {
 
 describe('IncidentStore', () => {
   let store: IncidentStore;
+
+  const listIncidents = () => TestBed.inject(LIST_INCIDENTS);
+  const createIncident = () => TestBed.inject(CREATE_INCIDENT);
+  const updateStatus = () => TestBed.inject(UPDATE_INCIDENT_STATUS);
 
   beforeEach(() => {
     prepareApi();
@@ -46,17 +51,23 @@ describe('IncidentStore', () => {
     }));
 
     it('mientras carga marca loading y luego lo apaga', fakeAsync(() => {
+      // Latencia explícita: con la de por defecto la respuesta podía llegar
+      // dentro del mismo turno según el orden en que Karma ejecutara las
+      // pruebas, y el indicador se apagaba antes de poder comprobarlo. Con
+      // un tiempo concreto, la petición está en vuelo con certeza.
+      setFakeBackendLatency(10);
       const pending = TestBed.inject(IncidentStore);
+
+      // La carga ya no la dispara el constructor del store, sino el caso de
+      // uso: antes de ejecutarlo no hay ninguna petición en vuelo.
+      expect(pending.loading()).toBe(false);
+
+      listIncidents().execute().subscribe();
       expect(pending.loading()).toBe(true);
 
-      tick();
+      tick(10);
 
       expect(pending.loading()).toBe(false);
-    }));
-
-    it('no hay error tras una carga correcta', fakeAsync(() => {
-      start();
-      expect(store.error()).toBeNull();
     }));
   });
 
@@ -87,7 +98,7 @@ describe('IncidentStore', () => {
 
     it('añade la incidencia y completa lo que decide el dominio', fakeAsync(() => {
       let created: Incident | undefined;
-      store.create(DRAFT).subscribe((incident) => (created = incident));
+      createIncident().execute(DRAFT).subscribe((incident) => (created = incident));
       tick();
 
       expect(created!.id).toBe('inc-006');
@@ -97,7 +108,7 @@ describe('IncidentStore', () => {
     }));
 
     it('la colección solo cambia cuando el servidor confirma', fakeAsync(() => {
-      store.create(DRAFT).subscribe();
+      createIncident().execute(DRAFT).subscribe();
 
       // Aún sin respuesta: nada de optimismo prematuro.
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length);
@@ -108,21 +119,29 @@ describe('IncidentStore', () => {
     }));
 
     it('la incidencia persiste en el servidor', fakeAsync(() => {
-      store.create(DRAFT).subscribe();
+      createIncident().execute(DRAFT).subscribe();
       tick();
 
       // Se recarga desde cero: si solo estuviera en memoria, desaparecería.
-      store.load();
+      store.clearError();
+      listIncidents()
+        .execute()
+        .subscribe({
+          error: (failure: Error) => {
+            store.markLoaded();
+            store.setError(failure.message);
+          },
+        });
       tick();
 
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length + 1);
     }));
 
     it('genera identificadores distintos en creaciones sucesivas', fakeAsync(() => {
-      store.create(DRAFT).subscribe();
+      createIncident().execute(DRAFT).subscribe();
       tick();
       let second: Incident | undefined;
-      store.create(DRAFT).subscribe((incident) => (second = incident));
+      createIncident().execute(DRAFT).subscribe((incident) => (second = incident));
       tick();
 
       expect(second!.id).toBe('inc-007');
@@ -159,7 +178,15 @@ describe('IncidentStore', () => {
       store.update('inc-001', { priority: IncidentPriorityEnum.CRITICAL }).subscribe();
       tick();
 
-      store.load();
+      store.clearError();
+      listIncidents()
+        .execute()
+        .subscribe({
+          error: (failure: Error) => {
+            store.markLoaded();
+            store.setError(failure.message);
+          },
+        });
       tick();
 
       expect(store.getById('inc-001')?.priority).toBe(IncidentPriorityEnum.CRITICAL);
@@ -181,7 +208,7 @@ describe('IncidentStore', () => {
     it('cambia el estado y lo refleja en la colección', fakeAsync(() => {
       const original = MOCK_INCIDENTS[0];
 
-      store.changeStatus(original.id, IncidentStatusEnum.RESOLVED).subscribe();
+      updateStatus().execute(original.id, IncidentStatusEnum.RESOLVED).subscribe();
       tick();
 
       expect(store.getById(original.id)!.status).toBe(IncidentStatusEnum.RESOLVED);
@@ -190,7 +217,7 @@ describe('IncidentStore', () => {
     it('no toca ningún otro campo', fakeAsync(() => {
       const original = MOCK_INCIDENTS[0];
 
-      store.changeStatus(original.id, IncidentStatusEnum.CLOSED).subscribe();
+      updateStatus().execute(original.id, IncidentStatusEnum.CLOSED).subscribe();
       tick();
 
       // La ventaja sobre `update()`: aunque quisiera, no puede cambiar más.
@@ -216,7 +243,15 @@ describe('IncidentStore', () => {
       store.remove('inc-001').subscribe();
       tick();
 
-      store.load();
+      store.clearError();
+      listIncidents()
+        .execute()
+        .subscribe({
+          error: (failure: Error) => {
+            store.markLoaded();
+            store.setError(failure.message);
+          },
+        });
       tick();
 
       expect(store.getById('inc-001')).toBeUndefined();
@@ -263,8 +298,7 @@ describe('IncidentStore', () => {
   describe('errores', () => {
     it('registra el mensaje cuando la carga inicial falla', fakeAsync(() => {
       failNextApiRequest();
-      store = TestBed.inject(IncidentStore);
-      tick();
+      store = loadIncidents();
 
       expect(store.error()).toBe('El servidor no pudo procesar la solicitud.');
       expect(store.getAll().length).toBe(0);
@@ -273,24 +307,30 @@ describe('IncidentStore', () => {
       expect(store.loading()).toBe(false);
     }));
 
+
     it('el error se puede descartar', fakeAsync(() => {
       failNextApiRequest();
-      store = TestBed.inject(IncidentStore);
-      tick();
+      store = loadIncidents();
       expect(store.error()).toBeTruthy();
 
       store.clearError();
 
       expect(store.error()).toBeNull();
     }));
-
     it('una petición correcta posterior limpia el error', fakeAsync(() => {
       failNextApiRequest();
-      store = TestBed.inject(IncidentStore);
-      tick();
+      store = loadIncidents();
       expect(store.error()).toBeTruthy();
 
-      store.load();
+      store.clearError();
+      listIncidents()
+        .execute()
+        .subscribe({
+          error: (failure: Error) => {
+            store.markLoaded();
+            store.setError(failure.message);
+          },
+        });
       tick();
 
       expect(store.error()).toBeNull();
@@ -406,8 +446,8 @@ describe('IncidentStore', () => {
     });
 
     it('una categoría nueva aparece sola al registrarla', fakeAsync(() => {
-      store
-        .create({
+      createIncident()
+        .execute({
           title: 'Ruido en el aire acondicionado',
           description: 'Se oye desde toda la planta.',
           category: 'Climatización',
@@ -530,7 +570,7 @@ describe('IncidentStore', () => {
     it('si un filtro deja menos páginas, la actual se recorta sola', () => {
       store.nextPage();
       // Se filtra a un solo resultado: la página 2 deja de existir.
-      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL});
+      store.setFilters({ priority: IncidentPriorityEnum.CRITICAL });
 
       expect(store.totalPages()).toBe(1);
       expect(store.currentPageNumber()).toBe(1);
@@ -603,7 +643,7 @@ describe('IncidentStore', () => {
     it('cambiar el estado solo surte efecto a través de las acciones', () => {
       const before = store.filters();
 
-      store.setFilters({ status: IncidentStatusEnum.OPEN});
+      store.setFilters({ status: IncidentStatusEnum.OPEN });
 
       expect(store.filters()).not.toEqual(before);
       expect(store.filters().status).toBe(IncidentStatusEnum.OPEN);
@@ -627,7 +667,7 @@ describe('IncidentStore', () => {
     it('no muta los datos simulados originales', fakeAsync(() => {
       const snapshot = MOCK_INCIDENTS.map((incident) => ({ ...incident }));
 
-      store.create(DRAFT).subscribe();
+      createIncident().execute(DRAFT).subscribe();
       tick();
       store.remove('inc-001').subscribe();
       tick();

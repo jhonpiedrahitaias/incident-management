@@ -113,19 +113,11 @@ archivos de pruebas.
 ## Pruebas
 
 ```bash
-npm run test:ci        # 486 pruebas
+npm run test:ci       
 npm run test:coverage  # informe en coverage/
 ```
 
-Los umbrales de cobertura (**90 %** líneas y funciones, **80 %** ramas) están
-configurados en `karma.conf.js` y **hacen fallar la ejecución** si se bajan.
-
-Con una advertencia que conviene tener presente: la cobertura mide ejecución,
-no verificación. Este proyecto se encontró un interceptor con 100 % de
-cobertura y **cero pruebas propias** — se ejecutaba en todas las demás por
-estar en la cadena HTTP. El detalle está en
-[`docs/guia-de-pruebas.md`](docs/guia-de-pruebas.md).
-
+Usamos Jasmiine y Karma
 ---
 
 ## Despliegue
@@ -142,78 +134,8 @@ regla recargar esa dirección devolvería un 404. Todo lo que no sea un archivo
 real debe responderse con `index.html`, y con un **200**, no un 301 — es una
 reescritura, no una redirección.
 
-El repositorio ya trae la configuración hecha para dos servicios:
-
-| Servicio | Archivo | Listo |
-|---|---|---|
-| Netlify | [`netlify.toml`](netlify.toml) + [`public/_redirects`](public/_redirects) | rutas + cabeceras de seguridad + caché |
-| Vercel | [`vercel.json`](vercel.json) | rutas + cabeceras de seguridad |
-
-Para otros servidores:
-
-<details>
-<summary><strong>nginx</strong></summary>
-
-```nginx
-location / {
-  try_files $uri $uri/ /index.html;
-}
-```
-</details>
-
-<details>
-<summary><strong>Apache</strong> (<code>.htaccess</code>)</summary>
-
-```apache
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
-```
-</details>
-
-<details>
-<summary><strong>GitHub Pages</strong></summary>
-
-No admite reescrituras. El apaño habitual es copiar `index.html` como
-`404.html`. Además hay que compilar con la ruta base del repositorio:
-
-```bash
-npm run build -- --base-href /nombre-del-repositorio/
-```
-</details>
-
-Las cabeceras de seguridad (`Content-Security-Policy`, `X-Frame-Options`,
-`Strict-Transport-Security`) van en esa misma configuración porque **las
-emite el servidor, no la aplicación**. Es lo que cierra el riesgo R-05.
-
----
+El repositorio ya trae la configuración hecha para dos servicios--
 
 ## Documentación
 
-| Documento | Contenido |
-|---|---|
-| [Arquitectura](docs/arquitectura.md) | diagramas de capas, flujo de datos, estado, interceptores y rutas |
-| [Capa de dominio y puertos](docs/capa-de-dominio-y-puertos.md) | las 4 interfaces de puerto, por qué los tokens no viven en el dominio y la regla que lo vigila |
-| [Casos de uso](docs/casos-de-uso.md) | los 3 casos de uso sin Angular, el reloj inyectable y por qué cambiar estado no es `update()` |
-| [Arquitectura hexagonal](docs/arquitectura-hexagonal.md) | propuesta de puertos y adaptadores: qué cambiaría y si compensa |
-| [Decisiones técnicas](docs/decisiones-tecnicas.md) | 10 decisiones con su alternativa descartada, y 7 limitaciones |
-| [Riesgos conocidos](docs/riesgos-conocidos.md) | 9 riesgos de seguridad con su plan de cierre |
-| [Guía de pruebas](docs/guia-de-pruebas.md) | cómo se prueba cada tipo de pieza |
-| [Medir rendimiento](docs/medir-rendimiento.md) | cómo se obtienen las cifras de detección de cambios, y qué herramientas no sirven |
-| [Conceptos por día](docs/) | `dia-NN-conceptos-y-pasos.md`, uno por jornada del reto |
-
-El plan completo del reto está en [`../PLAN.md`](../PLAN.md).
-
----
-
-## Estado del proyecto
-
-| | |
-|---|---|
-| Angular | 20.3.29 |
-| Pruebas | 486, todas en verde |
-| Vulnerabilidades | 0 |
-| Errores de lint | 0 |
-| Advertencias de compilación | 0 |
-| Paquete inicial | ~340 kB en crudo · **~98 kB transferidos** |
+| Doc

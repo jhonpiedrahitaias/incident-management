@@ -2,7 +2,6 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { Incident, IncidentChanges, IncidentPriorityEnum } from '../../domain/models/incident.model';
 import { IncidentCache } from '../../domain/ports/incident-cache.port';
-import { IncidentPriority } from '../../domain/models/incident.model';
 import {
   IncidentSearchCriteria,
   NO_CRITERIA,
