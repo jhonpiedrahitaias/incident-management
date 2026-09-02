@@ -17,7 +17,7 @@ import { authTokenInterceptor } from './core/infrastructure/http/auth-token-inte
 import { correlationIdInterceptor } from './core/infrastructure/http/correlation-id-interceptor';
 import { errorHandlingInterceptor } from './core/infrastructure/http/error-handling-interceptor';
 import { loadingInterceptor } from './core/infrastructure/http/loading-interceptor';
-import { AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, INCIDENT_REPOSITORY, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, USER_REPOSITORY } from './core/infrastructure/di/tokens';
+import { AUTH_GATEWAY, CHANGE_INCIDENTS_STATUS, CREATE_INCIDENT, INCIDENT_CACHE, INCIDENT_REPOSITORY, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, USER_REPOSITORY } from './core/infrastructure/di/tokens';
 import { IncidentApi } from './core/infrastructure/api/incident-api';
 import { AuthService } from './core/infrastructure/services/auth-service';
 import { UserService } from './core/infrastructure/services/user-service';
@@ -26,6 +26,7 @@ import { ListIncidentsUseCase } from './core/application/use-cases/list-incident
 import { UpdateIncidentStatusUseCase } from './core/application/use-cases/update-incident-status.use-case';
 import { SessionStorageSessionStore } from './core/infrastructure/services/session-storage-session-store';
 import { IncidentStore } from './core/infrastructure/state/incident-store';
+import { ChangeIncidentsStatusUseCase } from './core/application/use-cases/change-incidents-status.use-case';
 
 // Los pipes de formato (`date`, `number`, `currency`) usan el locale activo.
 // Sin registrarlo, Angular solo conoce `en-US` y las fechas saldrían en inglés.
@@ -69,6 +70,13 @@ export const appConfig: ApplicationConfig = {
       provide: UPDATE_INCIDENT_STATUS,
       useFactory: () =>
         new UpdateIncidentStatusUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+       {
+      // Se compone del anterior en vez de duplicar su lógica: las
+      // transiciones válidas y la actualización del modelo de lectura ya
+      // están resueltas allí.
+      provide: CHANGE_INCIDENTS_STATUS,
+      useFactory: () => new ChangeIncidentsStatusUseCase(inject(UPDATE_INCIDENT_STATUS)),
     },
   ],
 };

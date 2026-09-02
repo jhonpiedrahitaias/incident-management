@@ -170,3 +170,45 @@
 
 
 }
+
+
+.bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: 0.5rem;
+
+  &-count {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  &-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &-hint,
+  &-message {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  &-hint {
+    color: var(--color-text-muted, inherit);
+  }
+
+  // Ocupa toda la fila para que el resumen no quede escondido entre botones.
+  &-message {
+    flex-basis: 100%;
+  }
+
+  &-select-all {
+    margin-bottom: 0.75rem;
+  }
+}

@@ -54,12 +54,31 @@
   }
 
   <div class="detail-actions">
-    @if (canManageIncidents()) {
-    <a class="btn btn--primary" [routerLink]="['/incidents', incident.id, 'edit']">
-      Editar incidencia
-    </a>
+    @if (canManageIncidents() && siguientesEstados().length > 0) {
+    <section class="status-change">
+      <h3 class="status-change-title" id="cambiar-estado">Cambiar estado</h3>
+
+      <!-- Solo se ofrecen las transiciones que el dominio permite: la
+             pantalla no puede proponer algo que el caso de uso rechazaría. -->
+      <div class="status-change-actions" role="group" aria-labelledby="cambiar-estado">
+        @for (destino of siguientesEstados(); track destino) {
+        <button type="button" class="btn" [disabled]="cambiandoA() !== null" (click)="cambiarEstado(destino)">
+          {{ cambiandoA() === destino ? 'Guardando…' : accionPara(destino) }}
+        </button>
+        }
+      </div>
+
+      <!-- `role="alert"` lo anuncia en cuanto aparece: un fallo al cambiar
+             de estado no deja rastro visible en ningún otro sitio. -->
+      @if (statusError(); as mensaje) {
+      <p class="status-change-error" role="alert">{{ mensaje }}</p>
+      }
+    </section>
     }
-    <a class="btn" routerLink="/incidents">Volver al listado</a>
+    <section class="status-change">
+        <h3 class="status-change-title" id="cambiar-estado">Acciones</h3>
+      <a class="btn" routerLink="/incidents">Volver al listado</a>
+    </section>
   </div>
 </article>
 } @else {

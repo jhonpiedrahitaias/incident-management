@@ -1,11 +1,11 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
+import { CREATE_INCIDENT, LIST_INCIDENTS, UPDATE_INCIDENT_STATUS } from '../di/tokens';
 import { IncidentStore } from './incident-store';
 import { MOCK_INCIDENTS } from '../mocks/incidents.mock';
 import { Incident, IncidentDraft, IncidentPriorityEnum, IncidentStatusEnum } from '../../domain/models/incident.model';
 import { loadIncidents, prepareApi, provideTestApi } from '../../../testing/api-testing';
 import { failNextApiRequest, setFakeBackendLatency } from '../api/fake-backend-interceptor';
-import { LIST_INCIDENTS, CREATE_INCIDENT, UPDATE_INCIDENT_STATUS } from '../di/tokens';
 
 const DRAFT: IncidentDraft = {
   title: 'Fuga en el aire acondicionado',
@@ -15,6 +15,11 @@ const DRAFT: IncidentDraft = {
   reporterId: 'u-005',
 };
 
+/**
+ * El store dejó de orquestar comandos: ahora es el modelo de lectura, y
+ * quien registra, consulta o cambia el estado es un caso de uso. Estas
+ * pruebas los piden al inyector, igual que hacen los componentes.
+ */
 describe('IncidentStore', () => {
   let store: IncidentStore;
 
@@ -69,6 +74,11 @@ describe('IncidentStore', () => {
 
       expect(pending.loading()).toBe(false);
     }));
+
+    it('no hay error tras una carga correcta', fakeAsync(() => {
+      start();
+      expect(store.error()).toBeNull();
+    }));
   });
 
   describe('consulta', () => {
@@ -102,7 +112,7 @@ describe('IncidentStore', () => {
       tick();
 
       expect(created!.id).toBe('inc-006');
-      expect(created!.status).toBe(IncidentStatusEnum.OPEN);
+      expect(created!.status).toBe('OPEN');
       expect(created!.createdAt).toBe(created!.updatedAt);
       expect(store.getAll().length).toBe(MOCK_INCIDENTS.length + 1);
     }));
@@ -206,12 +216,28 @@ describe('IncidentStore', () => {
     beforeEach(fakeAsync(() => start()));
 
     it('cambia el estado y lo refleja en la colección', fakeAsync(() => {
+      // La primera del conjunto está abierta, y de ahí se pasa a en curso.
       const original = MOCK_INCIDENTS[0];
 
-      updateStatus().execute(original.id, IncidentStatusEnum.RESOLVED).subscribe();
+      updateStatus().execute(original.id, IncidentStatusEnum.IN_PROGRESS).subscribe();
       tick();
 
-      expect(store.getById(original.id)!.status).toBe(IncidentStatusEnum.RESOLVED);
+      expect(store.getById(original.id)!.status).toBe(IncidentStatusEnum.IN_PROGRESS);
+    }));
+
+    it('rechaza una transición que el ciclo de vida no permite', fakeAsync(() => {
+      const original = MOCK_INCIDENTS[0];
+      let fallo: Error | undefined;
+
+      // OPEN -> RESOLVED se salta el paso por «en curso».
+      updateStatus()
+        .execute(original.id, IncidentStatusEnum.RESOLVED)
+        .subscribe({ error: (error: Error) => (fallo = error) });
+      tick();
+
+      expect(fallo?.message).toContain('No se puede pasar');
+      // Y la colección queda intacta.
+      expect(store.getById(original.id)!.status).toBe(original.status);
     }));
 
     it('no toca ningún otro campo', fakeAsync(() => {
@@ -273,19 +299,19 @@ describe('IncidentStore', () => {
     it('cuentan el total, las críticas y las abiertas', () => {
       expect(store.totalCount()).toBe(MOCK_INCIDENTS.length);
       expect(store.criticalCount()).toBe(
-        MOCK_INCIDENTS.filter((i) => i.priority === IncidentPriorityEnum.CRITICAL).length,
+        MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length,
       );
-      expect(store.openCount()).toBe(MOCK_INCIDENTS.filter((i) => i.status === IncidentStatusEnum.OPEN).length);
+      expect(store.openCount()).toBe(MOCK_INCIDENTS.filter((i) => i.status === 'OPEN').length);
     });
 
     it('se recalculan solos al eliminar', fakeAsync(() => {
-      const critical = MOCK_INCIDENTS.find((i) => i.priority === IncidentPriorityEnum.CRITICAL)!;
+      const critical = MOCK_INCIDENTS.find((i) => i.priority === 'CRITICAL')!;
 
       store.remove(critical.id).subscribe();
       tick();
 
       expect(store.criticalCount()).toBe(
-        MOCK_INCIDENTS.filter((i) => i.priority === IncidentPriorityEnum.CRITICAL).length - 1,
+        MOCK_INCIDENTS.filter((i) => i.priority === 'CRITICAL').length - 1,
       );
     }));
 
@@ -307,7 +333,6 @@ describe('IncidentStore', () => {
       expect(store.loading()).toBe(false);
     }));
 
-
     it('el error se puede descartar', fakeAsync(() => {
       failNextApiRequest();
       store = loadIncidents();
@@ -317,6 +342,7 @@ describe('IncidentStore', () => {
 
       expect(store.error()).toBeNull();
     }));
+
     it('una petición correcta posterior limpia el error', fakeAsync(() => {
       failNextApiRequest();
       store = loadIncidents();
@@ -350,41 +376,115 @@ describe('IncidentStore', () => {
     beforeEach(fakeAsync(() => start()));
 
     it('arranca sin nada seleccionado', () => {
-      expect(store.selectedId()).toBeNull();
-      expect(store.selectedIncident()).toBeUndefined();
+      expect(store.selectedCount()).toBe(0);
+      expect(store.hasSelection()).toBe(false);
     });
 
     it('selecciona por identificador', () => {
-      store.select('inc-002');
+      store.toggleSelection('inc-002');
 
-      expect(store.selectedId()).toBe('inc-002');
-      expect(store.selectedIncident()?.title).toBe(MOCK_INCIDENTS[1].title);
+      expect(store.selectedIds().has('inc-002')).toBe(true);
+      expect(store.selectedIncidents()[0].title).toBe(MOCK_INCIDENTS[1].title);
+    });
+
+    it('acumula varias, que es lo que la distingue de la selección única', () => {
+      store.toggleSelection('inc-002');
+      store.toggleSelection('inc-003');
+
+      expect(store.selectedCount()).toBe(2);
     });
 
     it('volver a seleccionar la misma la deselecciona', () => {
-      store.select('inc-002');
-      store.select('inc-002');
+      store.toggleSelection('inc-002');
+      store.toggleSelection('inc-002');
 
-      expect(store.selectedId()).toBeNull();
+      expect(store.selectedCount()).toBe(0);
     });
 
-    it('al eliminar la seleccionada, la selección se limpia', fakeAsync(() => {
-      store.select('inc-002');
+    it('cada cambio produce un conjunto nuevo, no muta el anterior', () => {
+      const antes = store.selectedIds();
+
+      store.toggleSelection('inc-002');
+
+      // Con OnPush, mutar el mismo Set no repintaría nada.
+      expect(store.selectedIds()).not.toBe(antes);
+      expect(antes.has('inc-002')).toBe(false);
+    });
+
+    it('al eliminar una seleccionada, sale de la selección', fakeAsync(() => {
+      store.toggleSelection('inc-002');
 
       store.remove('inc-002').subscribe();
       tick();
 
-      expect(store.selectedId()).toBeNull();
+      expect(store.selectedCount()).toBe(0);
     }));
 
     it('eliminar otra no toca la selección', fakeAsync(() => {
-      store.select('inc-002');
+      store.toggleSelection('inc-002');
 
       store.remove('inc-001').subscribe();
       tick();
 
-      expect(store.selectedId()).toBe('inc-002');
+      expect(store.selectedIds().has('inc-002')).toBe(true);
     }));
+
+    it('limpiar deja la selección vacía', () => {
+      store.toggleSelection('inc-002');
+      store.toggleSelection('inc-003');
+
+      store.clearSelection();
+
+      expect(store.selectedCount()).toBe(0);
+    });
+
+    describe('seleccionar todas las visibles', () => {
+      it('marca solo las de la página actual, no la colección entera', () => {
+        store.setPageSize(2);
+
+        store.toggleSelectAllVisible();
+
+        // Seleccionar en silencio incidencias que no se ven en pantalla es la
+        // forma más rápida de borrar algo por error.
+        expect(store.selectedCount()).toBe(2);
+      });
+
+      it('si ya estaban todas, las deselecciona', () => {
+        store.setPageSize(2);
+        store.toggleSelectAllVisible();
+
+        store.toggleSelectAllVisible();
+
+        expect(store.selectedCount()).toBe(0);
+      });
+    });
+
+    describe('acciones comunes', () => {
+      it('sin selección no ofrece ninguna', () => {
+        expect(store.commonStatusActions()).toEqual([]);
+      });
+
+      it('con una sola, ofrece sus transiciones', () => {
+        store.toggleSelection('inc-001'); // OPEN
+
+        expect(store.commonStatusActions()).toEqual([IncidentStatusEnum.IN_PROGRESS, IncidentStatusEnum.CLOSED]);
+      });
+
+      it('con varias, solo lo que todas admiten', () => {
+        store.toggleSelection('inc-001'); // OPEN     -> IN_PROGRESS, CLOSED
+        store.toggleSelection('inc-004'); // RESOLVED -> CLOSED, IN_PROGRESS
+
+        // La intersección: ambas admiten cerrar y pasar a en curso.
+        expect(store.commonStatusActions()).toEqual([IncidentStatusEnum.IN_PROGRESS, IncidentStatusEnum.CLOSED]);
+      });
+
+      it('si no hay nada en común, no ofrece nada', () => {
+        store.toggleSelection('inc-001'); // OPEN   -> IN_PROGRESS, CLOSED
+        store.toggleSelection('inc-005'); // CLOSED -> OPEN
+
+        expect(store.commonStatusActions()).toEqual([]);
+      });
+    });
   });
 
   describe('filtros', () => {
@@ -486,7 +586,7 @@ describe('IncidentStore', () => {
       const ranks = store.visibleIncidents().map((i) => rank[i.priority]);
 
       expect(ranks).toEqual([...ranks].sort((a, b) => b - a));
-      expect(store.visibleIncidents()[0].priority).toBe(IncidentPriorityEnum.CRITICAL);
+      expect(store.visibleIncidents()[0].priority).toBe('CRITICAL');
     });
 
     it('toggleSort invierte la dirección si ya se ordena por ese campo', () => {
@@ -608,7 +708,7 @@ describe('IncidentStore', () => {
       'filters',
       'error',
       'loaded',
-      'selectedId',
+      'selectedIds',
     ] as const;
 
     for (const name of readOnlySignals) {
@@ -621,7 +721,7 @@ describe('IncidentStore', () => {
     }
 
     it('los selectores derivados tampoco', () => {
-      for (const selector of [store.totalCount, store.visibleIncidents, store.selectedIncident]) {
+      for (const selector of [store.totalCount, store.visibleIncidents, store.selectedIncidents]) {
         expect('set' in selector).toBe(false);
       }
     });
@@ -646,7 +746,7 @@ describe('IncidentStore', () => {
       store.setFilters({ status: IncidentStatusEnum.OPEN });
 
       expect(store.filters()).not.toEqual(before);
-      expect(store.filters().status).toBe(IncidentStatusEnum.OPEN);
+      expect(store.filters().status).toBe('OPEN');
     });
 
     it('modificar lo que devuelve getAll no altera el estado', () => {

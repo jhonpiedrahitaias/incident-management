@@ -9,11 +9,12 @@ import { loadingInterceptor } from '../core/infrastructure/http/loading-intercep
 import { AuthService } from '../core/infrastructure/services/auth-service';
 import { IncidentStore } from '../core/infrastructure/state/incident-store';
 import { IncidentApi } from '../core/infrastructure/api/incident-api';
-import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS } from '../core/infrastructure/di/tokens';
+import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, CHANGE_INCIDENTS_STATUS } from '../core/infrastructure/di/tokens';
 import { UserService } from '../core/infrastructure/services/user-service';
 import { CreateIncidentUseCase } from '../core/application/use-cases/create-incident.use-case';
 import { ListIncidentsUseCase } from '../core/application/use-cases/list-incidents.use-case';
 import { UpdateIncidentStatusUseCase } from '../core/application/use-cases/update-incident-status.use-case';
+import { ChangeIncidentsStatusUseCase } from '../core/application/use-cases/change-incidents-status.use-case';
 import { SessionStorageSessionStore } from '../core/infrastructure/services/session-storage-session-store';
 
 /**
@@ -67,6 +68,11 @@ export function provideTestApi(): EnvironmentProviders {
       provide: UPDATE_INCIDENT_STATUS,
       useFactory: () =>
         new UpdateIncidentStatusUseCase(inject(INCIDENT_REPOSITORY), inject(INCIDENT_CACHE)),
+    },
+    {
+      provide: CHANGE_INCIDENTS_STATUS,
+      useFactory: () =>
+        new ChangeIncidentsStatusUseCase(inject(UPDATE_INCIDENT_STATUS)),
     },
   ]);
 }

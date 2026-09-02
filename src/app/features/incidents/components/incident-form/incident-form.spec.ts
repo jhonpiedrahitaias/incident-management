@@ -286,4 +286,94 @@ describe('IncidentForm', () => {
   function errorFor(fieldId: string): HTMLElement | null {
     return fixture.nativeElement.querySelector(`#${fieldId}-error`);
   }
+
+    // --- Día 8: render con datos (modo edición) ------------------------------
+
+  describe('modo edición: render con datos', () => {
+    const EXISTENTE: IncidentFormValue = {
+      title: 'Servidor de correo caído',
+      description: 'No entrega mensajes desde las 08:00.',
+      category: 'Infraestructura',
+      priority: IncidentPriorityEnum.CRITICAL,
+      tags: ['correo', 'urgente'],
+    };
+
+    /**
+     * Los `input()` de señal se escriben con `setInput` sobre el
+     * `componentRef`, no asignando la propiedad: asignarla directamente se
+     * salta el sistema de entradas y el componente no se entera del cambio.
+     */
+    function conDatos(valor: IncidentFormValue = EXISTENTE): void {
+      fixture.componentRef.setInput('initialValue', valor);
+      fixture.componentRef.setInput('submitLabel', 'Guardar cambios');
+      fixture.detectChanges();
+    }
+
+    it('precarga los campos con los datos recibidos', () => {
+      conDatos();
+
+      expect(field('#incident-title').value).toBe(EXISTENTE.title);
+      expect(field('#incident-description').value).toBe(EXISTENTE.description);
+      expect(field('#incident-category').value).toBe(EXISTENTE.category);
+      expect(field('#incident-priority').value).toBe(EXISTENTE.priority);
+    });
+
+    it('precarga también las etiquetas, que son un FormArray', () => {
+      conDatos();
+
+      // El caso que más fácil se rompe: los controles del arreglo hay que
+      // crearlos, no basta con asignar el valor.
+      const etiquetas = Array.from<HTMLInputElement>(
+        fixture.nativeElement.querySelectorAll('[id^="incident-tag-"]'),
+      ).map((entrada) => entrada.value);
+
+      expect(etiquetas).toEqual(['correo', 'urgente']);
+    });
+
+    it('el botón de envío usa la etiqueta de la pantalla', () => {
+      conDatos();
+
+      expect(submitButton().textContent?.trim()).toBe('Guardar cambios');
+    });
+
+    it('con datos válidos el envío está habilitado desde el principio', () => {
+      conDatos();
+
+      // Al editar, quien entra ya tiene un formulario válido: obligarle a
+      // tocar algo para poder guardar sería absurdo.
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it('no muestra errores al abrir en edición', () => {
+      conDatos();
+
+      expect(errors().length).toBe(0);
+    });
+
+    it('emite los valores con el cambio aplicado y conserva el resto', () => {
+      conDatos();
+
+      type_('#incident-title', 'Servidor de correo restablecido');
+      submit();
+
+      expect(emitted.length).toBe(1);
+      expect(emitted[0].title).toBe('Servidor de correo restablecido');
+      // Lo que no se tocó tiene que viajar igual: un formulario de edición
+      // que pierde campos borra datos sin avisar.
+      expect(emitted[0].description).toBe(EXISTENTE.description);
+      expect(emitted[0].category).toBe(EXISTENTE.category);
+      expect(emitted[0].priority).toBe(EXISTENTE.priority);
+      expect(emitted[0].tags).toEqual(EXISTENTE.tags);
+    });
+
+    it('sin datos (alta) arranca vacío: es el mismo componente', () => {
+      // El contraste con el bloque anterior es lo que demuestra que una sola
+      // pieza sirve a las dos pantallas.
+      fixture.componentRef.setInput('initialValue', null);
+      fixture.detectChanges();
+
+      expect(field('#incident-title').value).toBe('');
+      expect(submitButton().disabled).toBe(true);
+    });
+  });
 });

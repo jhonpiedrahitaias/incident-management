@@ -7,6 +7,7 @@ import { ListIncidentsUseCase } from '../../application/use-cases/list-incidents
 import { SessionStore } from '../../domain/ports/session-store.port';
 import { UpdateIncidentStatusUseCase } from '../../application/use-cases/update-incident-status.use-case';
 import { UserRepository } from '../../domain/ports/user-repository.port';
+import { ChangeIncidentsStatusUseCase } from '../../application/use-cases/change-incidents-status.use-case';
 
 
 export const INCIDENT_REPOSITORY = new InjectionToken<IncidentRepository>(
@@ -31,4 +32,8 @@ export const LIST_INCIDENTS = new InjectionToken<ListIncidentsUseCase>(
 
 export const UPDATE_INCIDENT_STATUS = new InjectionToken<UpdateIncidentStatusUseCase>(
   'UpdateIncidentStatusUseCase',
+);
+
+export const CHANGE_INCIDENTS_STATUS = new InjectionToken<ChangeIncidentsStatusUseCase>(
+  'ChangeIncidentsStatusUseCase',
 );

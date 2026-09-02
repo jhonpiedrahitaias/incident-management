@@ -5,11 +5,10 @@ import { CREATE_INCIDENT } from '../../../../core/infrastructure/di/tokens';
 import { LoadingService } from '../../../../core/infrastructure/services/loading-service';
 import { UserService } from '../../../../core/infrastructure/services/user-service';
 import { IncidentForm, IncidentFormValue } from '../../components/incident-form/incident-form';
-import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 
 @Component({
   selector: 'app-incident-new',
-  imports: [IncidentForm, RouterLink, LoadingIndicator],
+  imports: [IncidentForm, RouterLink],
   templateUrl: './incident-new.html',
   styleUrl: './incident-new.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -60,4 +60,35 @@ export function nextIncidentId(incidents: readonly Incident[]): string {
   }, 0);
 
   return `inc-${String(highest + 1).padStart(3, '0')}`;
+
+  
+}
+
+export const STATUS_TRANSITIONS: Readonly<Record<IncidentStatusEnum, readonly IncidentStatusEnum[]>> = {
+  [IncidentStatusEnum.OPEN]: [IncidentStatusEnum.IN_PROGRESS, IncidentStatusEnum.CLOSED],
+  [IncidentStatusEnum.IN_PROGRESS]: [IncidentStatusEnum.RESOLVED, IncidentStatusEnum.OPEN],
+  [IncidentStatusEnum.RESOLVED]: [IncidentStatusEnum.CLOSED, IncidentStatusEnum.IN_PROGRESS],
+  [IncidentStatusEnum.CLOSED]: [IncidentStatusEnum.OPEN],
+};
+
+export function nextStatuses(from: IncidentStatusEnum): readonly IncidentStatusEnum[] {
+  return STATUS_TRANSITIONS[from];
+}
+
+export function canTransitionTo(from: IncidentStatusEnum, to: IncidentStatusEnum): boolean {
+  return STATUS_TRANSITIONS[from].includes(to);
+}
+
+export function commonNextStatuses(
+  incidents: readonly Incident[],
+): readonly IncidentStatusEnum[] {
+  if (incidents.length === 0) {
+    return [];
+  }
+
+  const [primera, ...resto] = incidents;
+
+  return nextStatuses(primera.status).filter((destino) =>
+    resto.every((incident) => canTransitionTo(incident.status, destino)),
+  );
 }
