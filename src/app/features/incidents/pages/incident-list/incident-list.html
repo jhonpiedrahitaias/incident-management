@@ -133,14 +133,55 @@
     }
   </p>
 
-  <p class="incident-list-selection" aria-live="polite" [appIncidentHighlight]="selectedIncident()?.priority">
-    @if (selectedIncident(); as incident) {
-    Incidencia seleccionada: <strong>{{ incident.title }}</strong>
-    ({{ incident.id | uppercase }} · prioridad {{ incident.priority | incidentPriority }})
-    } @else {
-    <span class="incident-list-selection--empty">Ninguna incidencia seleccionada.</span>
+  <!-- Barra de acciones en lote. Solo aparece con algo seleccionado: una
+       barra siempre visible y siempre deshabilitada es ruido. -->
+  @if (hasSelection()) {
+  <div class="bulk" role="group" aria-labelledby="bulk-titulo">
+    <p class="bulk-count" id="bulk-titulo" aria-live="polite">
+      {{ selectedCount() }}
+      {{ selectedCount() === 1 ? 'incidencia seleccionada' : 'incidencias seleccionadas' }}
+    </p>
+
+    @if (canManageIncidents()) {
+    <div class="bulk-actions">
+      <!-- Solo las transiciones que TODAS admiten: con una abierta y una
+               resuelta, la única común es cerrar. La regla es del dominio. -->
+      @for (destino of commonStatusActions(); track destino) {
+      <button type="button" class="btn" [disabled]="bulkEnCurso()" (click)="onBulkStatus(destino)">
+        {{ accionPara(destino) }}
+      </button>
+      } @empty {
+      <p class="bulk-hint">
+        Las seleccionadas están en estados distintos: no hay una acción común.
+      </p>
+      }
+
+      <button type="button" class="btn btn--danger" [disabled]="bulkEnCurso()" (click)="onBulkDelete()">
+        Eliminar
+      </button>
+    </div>
     }
-  </p>
+
+    <button type="button" class="btn" (click)="onClearSelection()">
+      Limpiar selección
+    </button>
+  </div>
+  }
+
+  <!-- El resumen vive FUERA de la barra a propósito: al terminar bien se
+       limpia la selección, la barra desaparece, y si el mensaje estuviera
+       dentro se iría con ella sin que nadie llegara a leerlo. -->
+  @if (bulkMessage(); as mensaje) {
+  <p class="bulk-message" role="status">{{ mensaje }}</p>
+  }
+
+  <!-- Seleccionar todo lo visible: actúa sobre lo filtrado y paginado, no
+       sobre la colección entera. -->
+  @if (pagedIncidents().length > 0) {
+  <button type="button" class="btn bulk-select-all" (click)="onToggleSelectAll()">
+    {{ todasVisiblesSeleccionadas() ? 'Deseleccionar visibles' : 'Seleccionar visibles' }}
+  </button>
+  }
 
   <ul class="incident-list-grid">
     @for (incident of pagedIncidents(); track incident.id) {
@@ -148,7 +189,7 @@
       <!-- La ruta la construye el contenedor: la tarjeta sigue sin saber
              nada del enrutador ni de las direcciones de la aplicación. -->
       <app-incident-card [incident]="incident" [detailLink]="'/incidents/' + incident.id"
-        [selected]="incident.id === selectedId()" (incidentSelected)="onIncidentSelected($event)"
+        [selected]="selectedIds().has(incident.id)" (incidentSelected)="onIncidentSelected($event)"
         (deleteRequested)="onDeleteRequested($event)" />
     </li>
     } @empty {
@@ -168,6 +209,16 @@
     </li>
     }
   </ul>
+
+  <!-- Borrado en lote: el diálogo dice **cuántas**, que es el dato que
+       importa cuando no se puede nombrar a cada una. -->
+  <app-confirm-dialog [open]="bulkDeletionRequested()" title="Eliminar incidencias" [message]="
+      '¿Seguro que quieres eliminar ' +
+      selectedCount() +
+      (selectedCount() === 1 ? ' incidencia' : ' incidencias') +
+      '? Esta acción no se puede deshacer.'
+    " confirmLabel="Eliminar" [destructive]="true" (confirmed)="confirmBulkDeletion()"
+    (cancelled)="cancelBulkDeletion()" />
 
   <!-- Eliminar es irreversible: se confirma antes. El diálogo nombra la
        incidencia concreta para que no haya dudas de cuál se borra. -->

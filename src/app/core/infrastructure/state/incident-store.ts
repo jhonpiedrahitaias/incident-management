@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { Incident, IncidentChanges, IncidentPriorityEnum } from '../../domain/models/incident.model';
+import { commonNextStatuses, Incident, IncidentChanges, IncidentPriorityEnum } from '../../domain/models/incident.model';
 import { IncidentCache } from '../../domain/ports/incident-cache.port';
 import {
   IncidentSearchCriteria,
@@ -90,7 +90,6 @@ export class IncidentStore implements IncidentCache {
   // TypeScript no le deja ver los campos.
 
   private readonly incidentList = signal<readonly Incident[]>([]);
-  private readonly selectedIncidentId = signal<string | null>(null);
   private readonly lastError = signal<string | null>(null);
   private readonly initialized = signal(false);
   private readonly activeFilters = signal<IncidentSearchCriteria>(NO_CRITERIA);
@@ -99,6 +98,8 @@ export class IncidentStore implements IncidentCache {
   private readonly currentPageSize = signal<number>(DEFAULT_PAGE_SIZE);
   /** Resultados que devolvió el servidor para el término de búsqueda. */
   private readonly searchResults = signal<readonly Incident[]>([]);
+
+  private readonly selectedIncidentIds = signal<ReadonlySet<string>>(new Set());
 
   // --- Selectores ----------------------------------------------------------
   //
@@ -113,10 +114,19 @@ export class IncidentStore implements IncidentCache {
   readonly loaded = this.initialized.asReadonly();
   readonly loading = this.loadingService.loading;
 
-  readonly selectedId = this.selectedIncidentId.asReadonly();
+  readonly selectedIds = this.selectedIncidentIds.asReadonly();
 
-  readonly selectedIncident = computed(() =>
-    this.incidentList().find((incident) => incident.id === this.selectedIncidentId()),
+  readonly selectedIncidents = computed(() => {
+    const ids = this.selectedIncidentIds();
+    return this.incidentList().filter((incident) => ids.has(incident.id));
+  });
+
+  readonly selectedCount = computed(() => this.selectedIncidents().length);
+
+  readonly hasSelection = computed(() => this.selectedCount() > 0);
+
+  readonly commonStatusActions = computed(() =>
+    commonNextStatuses(this.selectedIncidents()),
   );
 
   // Indicadores: sobre la colección completa, no sobre lo filtrado.
@@ -280,21 +290,61 @@ export class IncidentStore implements IncidentCache {
     return this.track(this.api.remove(id)).pipe(
       tap(() => {
         this.incidentList.update((current) => current.filter((incident) => incident.id !== id));
-        // Si la eliminada estaba seleccionada, la selección deja de tener sentido.
-        if (this.selectedIncidentId() === id) {
-          this.selectedIncidentId.set(null);
-        }
+        this.deselect(id);
       }),
     );
   }
 
-  /** Alterna la selección: volver a seleccionar la misma la deselecciona. */
-  select(id: string): void {
-    this.selectedIncidentId.update((current) => (current === id ? null : id));
+  toggleSelection(id: string): void {
+    this.selectedIncidentIds.update((current) => {
+      // Nunca se muta el conjunto actual: con `OnPush`, la misma referencia
+      // no dispararía el repintado.
+      const siguiente = new Set(current);
+
+      if (siguiente.has(id)) {
+        siguiente.delete(id);
+      } else {
+        siguiente.add(id);
+      }
+
+      return siguiente;
+    });
+  }
+
+  /** Quita una de la selección, si estaba. */
+  deselect(id: string): void {
+    this.selectedIncidentIds.update((current) => {
+      if (!current.has(id)) {
+        // Devolver el mismo conjunto evita un repintado sin motivo.
+        return current;
+      }
+
+      const siguiente = new Set(current);
+      siguiente.delete(id);
+      return siguiente;
+    });
+  }
+
+  /**
+   * Selecciona todas las visibles, o las deselecciona si ya lo estaban todas.
+   *
+   * Actúa sobre lo **visible** —filtrado y paginado—, no sobre la colección
+   * entera: seleccionar en silencio incidencias que no se ven en pantalla es
+   * la forma más rápida de borrar algo por error.
+   */
+  toggleSelectAllVisible(): void {
+    const visibles = this.pagedIncidents();
+    const ids = this.selectedIncidentIds();
+    const todasSeleccionadas =
+      visibles.length > 0 && visibles.every((incident) => ids.has(incident.id));
+
+    this.selectedIncidentIds.set(
+      todasSeleccionadas ? new Set() : new Set(visibles.map((incident) => incident.id)),
+    );
   }
 
   clearSelection(): void {
-    this.selectedIncidentId.set(null);
+    this.selectedIncidentIds.set(new Set());
   }
 
   /**

@@ -8,6 +8,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
+  forkJoin,
   interval,
   map,
   of,
@@ -29,7 +30,8 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
 import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
 import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
-import { LIST_INCIDENTS } from '../../../../core/infrastructure/di/tokens';
+import { CHANGE_INCIDENTS_STATUS, INCIDENT_REPOSITORY, LIST_INCIDENTS } from '../../../../core/infrastructure/di/tokens';
+import { AuthService } from '../../../../core/infrastructure/services/auth-service';
 
 /** Espera antes de consultar al servidor, en milisegundos. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -44,10 +46,7 @@ const AUTO_REFRESH_MS = 30_000;
     ConfirmDialog,
     EmptyState,
     LoadingIndicator,
-    UpperCasePipe,
-    IncidentPriorityPipe,
-    IncidentHighlight,
-    RouterLink,
+    RouterLink
   ],
   templateUrl: './incident-list.html',
   styleUrl: './incident-list.scss',
@@ -56,7 +55,7 @@ const AUTO_REFRESH_MS = 30_000;
 export class IncidentList {
   private readonly store = inject(IncidentStore);
   private readonly listIncidents = inject(LIST_INCIDENTS);
-  private readonly incidentApi = inject(IncidentApi);
+  private readonly incidentApi = inject(INCIDENT_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -65,15 +64,14 @@ export class IncidentList {
   //
   // Todo son señales de solo lectura del store. El componente **no puede**
   // escribir en el estado: para eso llama a una acción.
-
+  private readonly changeStatuses = inject(CHANGE_INCIDENTS_STATUS);
+  protected readonly canManageIncidents = inject(AuthService).canManageIncidents;
   protected readonly incidents = this.store.incidents;
   protected readonly visibleIncidents = this.store.visibleIncidents;
   protected readonly visibleCount = this.store.visibleCount;
   protected readonly totalCount = this.store.totalCount;
   protected readonly criticalCount = this.store.criticalCount;
   protected readonly openCount = this.store.openCount;
-  protected readonly selectedId = this.store.selectedId;
-  protected readonly selectedIncident = this.store.selectedIncident;
   protected readonly hasActiveFilters = this.store.hasActiveFilters;
   protected readonly categories = this.store.categories;
   protected readonly sort = this.store.sort;
@@ -112,6 +110,85 @@ export class IncidentList {
    * —dependen de lo rápido que teclee una persona—, no del dominio. El
    * store solo recibe el resultado a través de una acción.
    */
+
+  protected readonly selectedIds = this.store.selectedIds;
+  protected readonly selectedIncidents = this.store.selectedIncidents;
+  protected readonly selectedCount = this.store.selectedCount;
+  protected readonly hasSelection = this.store.hasSelection;
+  /** Acciones que **todas** las seleccionadas admiten. Sale del dominio. */
+  protected readonly commonStatusActions = this.store.commonStatusActions;
+
+  // --- Acciones en lote ------------------------------------------------------
+
+  /** Bloquea la barra mientras una operación está en vuelo. */
+  private readonly bulkPendiente = signal(false);
+  protected readonly bulkEnCurso = this.bulkPendiente.asReadonly();
+
+  /** Resumen de lo ocurrido en la última operación en lote. */
+  private readonly bulkResumen = signal<string | null>(null);
+  protected readonly bulkMessage = this.bulkResumen.asReadonly();
+
+  /** ¿Están todas las visibles seleccionadas? Decide el texto del botón. */
+  protected readonly todasVisiblesSeleccionadas = computed(() => {
+    const visibles = this.store.pagedIncidents();
+    const ids = this.store.selectedIds();
+
+    return visibles.length > 0 && visibles.every((incident) => ids.has(incident.id));
+  });
+
+  /** Texto del botón para cada destino: nombra la acción, no el estado. */
+  protected accionPara(destino: IncidentStatusEnum): string {
+    const acciones: Readonly<Record<IncidentStatusEnum, string>> = {
+      OPEN: 'Reabrir',
+      IN_PROGRESS: 'En progreso',
+      RESOLVED: 'Marcar como resuelta',
+      CLOSED: 'Cerrar',
+    };
+
+    return acciones[destino];
+  }
+
+  protected onToggleSelectAll(): void {
+    this.store.toggleSelectAllVisible();
+    this.bulkResumen.set(null);
+  }
+
+  protected onClearSelection(): void {
+    this.store.clearSelection();
+    this.bulkResumen.set(null);
+  }
+
+  protected onBulkStatus(destino: IncidentStatusEnum): void {
+    const ids = this.store.selectedIncidents().map((incident) => incident.id);
+
+    if (ids.length === 0 || this.bulkPendiente()) {
+      return;
+    }
+
+    this.bulkPendiente.set(true);
+    this.bulkResumen.set(null);
+
+    this.changeStatuses
+      .execute(ids, destino)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((resultado) => {
+        this.bulkPendiente.set(false);
+
+        // El caso de uso nunca falla: reparte entre aplicadas y fallidas. Se
+        // cuenta lo que pasó de verdad en vez de dar un «listo» genérico.
+        if (resultado.fallidas.length === 0) {
+          this.bulkResumen.set(`${resultado.aplicadas.length} actualizadas.`);
+          this.store.clearSelection();
+          return;
+        }
+
+        this.bulkResumen.set(
+          `${resultado.aplicadas.length} actualizadas, ${resultado.fallidas.length} sin cambiar.`,
+        );
+        // La selección se conserva: quien lo intentó necesita poder repetir
+        // sobre las que quedaron sin aplicar.
+      });
+  }
   private readonly search = toSignal(
     toObservable(computed(() => this.filters().searchTerm)).pipe(
       debounceTime(SEARCH_DEBOUNCE_MS),
@@ -255,7 +332,61 @@ export class IncidentList {
   }
 
   protected onIncidentSelected(incident: Incident): void {
-    this.store.select(incident.id);
+    this.store.toggleSelection(incident.id);
+  }
+
+  /** Marca que se pidió borrar el lote; el diálogo confirma. */
+  private readonly bulkDeletionPending = signal(false);
+  protected readonly bulkDeletionRequested = this.bulkDeletionPending.asReadonly();
+
+  protected onBulkDelete(): void {
+    if (this.store.selectedCount() === 0 || this.bulkPendiente()) {
+      return;
+    }
+
+    // Borrar es irreversible y aquí son varias a la vez: se confirma.
+    this.bulkDeletionPending.set(true);
+  }
+
+  protected cancelBulkDeletion(): void {
+    this.bulkDeletionPending.set(false);
+  }
+
+  protected confirmBulkDeletion(): void {
+    const ids = this.store.selectedIncidents().map((incident) => incident.id);
+
+    this.bulkDeletionPending.set(false);
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    this.bulkPendiente.set(true);
+    this.bulkResumen.set(null);
+
+    // Cada borrado lleva su `catchError`: sin eso, el primer fallo cancelaría
+    // los demás a mitad de vuelo y el lote quedaría a medias sin saber cuánto.
+    const intentos = ids.map((id) =>
+      this.store.remove(id).pipe(
+        map(() => true),
+        catchError(() => of(false)),
+      ),
+    );
+
+    forkJoin(intentos)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((resultados) => {
+        this.bulkPendiente.set(false);
+
+        const borradas = resultados.filter(Boolean).length;
+        const fallidas = resultados.length - borradas;
+
+        this.bulkResumen.set(
+          fallidas === 0
+            ? `${borradas} eliminadas.`
+            : `${borradas} eliminadas, ${fallidas} sin eliminar.`,
+        );
+      });
   }
 
   /** El hijo pide eliminar; aquí solo se abre la confirmación. */

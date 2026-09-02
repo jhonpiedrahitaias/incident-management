@@ -42,14 +42,12 @@ export const DEMO_PASSWORD = 'angular20';
 
 /** Estado del servidor simulado. Vive fuera del interceptor: es «la base de datos». */
 let database: Incident[] = MOCK_INCIDENTS.map((incident) => ({ ...incident }));
-
+let failNextRequest = false;
 /** Devuelve la base a su contenido inicial (lo usan las pruebas). */
 export function resetFakeBackend(): void {
   database = MOCK_INCIDENTS.map((incident) => ({ ...incident }));
+  failNextRequest = false;
 }
-
-/** Fuerza que la siguiente petición falle, para poder probar el error. */
-let failNextRequest = false;
 
 export function failNextApiRequest(): void {
   failNextRequest = true;
