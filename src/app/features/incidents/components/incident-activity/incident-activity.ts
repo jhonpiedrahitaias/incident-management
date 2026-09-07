@@ -2,8 +2,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Incident } from '../../../../core/domain/models/incident.model';
-import { UserService } from '../../../../core/infrastructure/services/user-service';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time-pipe';
+import { USER_REPOSITORY } from '../../../../core/infrastructure/di/tokens';
 
 /** Una entrada de la traza de la incidencia. */
 interface ActivityEntry {
@@ -27,7 +27,7 @@ interface ActivityEntry {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IncidentActivity {
-  private readonly userService = inject(UserService);
+  private readonly userService = inject(USER_REPOSITORY);
 
   readonly incident = input.required<Incident>();
 

@@ -1,6 +1,6 @@
+import { SESSION } from '../../../../core/infrastructure/di/tokens';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { UpperCasePipe } from '@angular/common';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import {
   EMPTY,
@@ -16,7 +16,11 @@ import {
   tap,
 } from 'rxjs';
 import { Incident, IncidentPriorityEnum, IncidentStatusEnum } from '../../../../core/domain/models/incident.model';
-import { IncidentApi } from '../../../../core/infrastructure/api/incident-api';
+import {
+  CHANGE_INCIDENTS_STATUS,
+  INCIDENT_REPOSITORY,
+  LIST_INCIDENTS,
+} from '../../../../core/infrastructure/di/tokens';
 import {
   ANY,
   IncidentStore,
@@ -28,10 +32,6 @@ import { IncidentCard } from '../../components/incident-card/incident-card';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { LoadingIndicator } from '../../../../shared/components/loading-indicator/loading-indicator';
-import { IncidentPriorityPipe } from '../../../../shared/pipes/incident-priority-pipe';
-import { IncidentHighlight } from '../../../../shared/directives/incident-highlight';
-import { CHANGE_INCIDENTS_STATUS, INCIDENT_REPOSITORY, LIST_INCIDENTS } from '../../../../core/infrastructure/di/tokens';
-import { AuthService } from '../../../../core/infrastructure/services/auth-service';
 
 /** Espera antes de consultar al servidor, en milisegundos. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -46,7 +46,7 @@ const AUTO_REFRESH_MS = 30_000;
     ConfirmDialog,
     EmptyState,
     LoadingIndicator,
-    RouterLink
+    RouterLink,
   ],
   templateUrl: './incident-list.html',
   styleUrl: './incident-list.scss',
@@ -54,7 +54,17 @@ const AUTO_REFRESH_MS = 30_000;
 })
 export class IncidentList {
   private readonly store = inject(IncidentStore);
+  // Recargar es una operación de negocio: la ejecuta el caso de uso. El
+  // store se sigue usando, pero solo para **leer** estado y para los filtros
+  // y la paginación, que son de la vista.
   private readonly listIncidents = inject(LIST_INCIDENTS);
+  private readonly changeStatuses = inject(CHANGE_INCIDENTS_STATUS);
+
+  /** Las acciones en lote solo se ofrecen a quien puede gestionar. */
+  protected readonly canManageIncidents = inject(SESSION).canManageIncidents;
+  // El **puerto**, no el adaptador HTTP. Antes aquí había `inject(IncidentApi)`,
+  // que ataba la pantalla a una implementación concreta y hacía imposible
+  // probarla sin levantar toda la cadena de interceptores.
   private readonly incidentApi = inject(INCIDENT_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
@@ -64,53 +74,13 @@ export class IncidentList {
   //
   // Todo son señales de solo lectura del store. El componente **no puede**
   // escribir en el estado: para eso llama a una acción.
-  private readonly changeStatuses = inject(CHANGE_INCIDENTS_STATUS);
-  protected readonly canManageIncidents = inject(AuthService).canManageIncidents;
+
   protected readonly incidents = this.store.incidents;
   protected readonly visibleIncidents = this.store.visibleIncidents;
   protected readonly visibleCount = this.store.visibleCount;
   protected readonly totalCount = this.store.totalCount;
   protected readonly criticalCount = this.store.criticalCount;
   protected readonly openCount = this.store.openCount;
-  protected readonly hasActiveFilters = this.store.hasActiveFilters;
-  protected readonly categories = this.store.categories;
-  protected readonly sort = this.store.sort;
-  protected readonly pagedIncidents = this.store.pagedIncidents;
-  protected readonly totalPages = this.store.totalPages;
-  protected readonly currentPageNumber = this.store.currentPageNumber;
-  protected readonly hasPreviousPage = this.store.hasPreviousPage;
-  protected readonly hasNextPage = this.store.hasNextPage;
-  protected readonly pageRange = this.store.pageRange;
-  protected readonly pageSize = this.store.pageSize;
-  protected readonly pageSizes = PAGE_SIZES;
-  protected readonly filters = this.store.filters;
-  protected readonly loading = this.store.loading;
-  protected readonly error = this.store.error;
-  protected readonly loaded = this.store.loaded;
-
-  /** Estado puramente visual: no describe el dominio, no va al store. */
-  protected readonly searching = signal(false);
-  protected readonly searchError = signal<string | null>(null);
-  protected readonly autoRefresh = signal(false);
-
-  /**
-   * Incidencia pendiente de confirmar su eliminación.
-   *
-   * Guardar la incidencia entera —y no solo un booleano— permite nombrarla
-   * en el diálogo, que es lo que evita borrar la que no era.
-   */
-  protected readonly pendingDeletion = signal<Incident | null>(null);
-
-  // --- Búsqueda reactiva ---------------------------------------------------
-
-  /**
-   * El flujo RxJS se queda en el componente, no en el store.
-   *
-   * La espera de 300 ms y la cancelación son decisiones de **interacción**
-   * —dependen de lo rápido que teclee una persona—, no del dominio. El
-   * store solo recibe el resultado a través de una acción.
-   */
-
   protected readonly selectedIds = this.store.selectedIds;
   protected readonly selectedIncidents = this.store.selectedIncidents;
   protected readonly selectedCount = this.store.selectedCount;
@@ -140,8 +110,8 @@ export class IncidentList {
   protected accionPara(destino: IncidentStatusEnum): string {
     const acciones: Readonly<Record<IncidentStatusEnum, string>> = {
       OPEN: 'Reabrir',
-      IN_PROGRESS: 'En progreso',
-      RESOLVED: 'Marcar como resuelta',
+      IN_PROGRESS: 'Tomar en curso',
+      RESOLVED: 'Marcar resueltas',
       CLOSED: 'Cerrar',
     };
 
@@ -189,6 +159,44 @@ export class IncidentList {
         // sobre las que quedaron sin aplicar.
       });
   }
+  protected readonly hasActiveFilters = this.store.hasActiveFilters;
+  protected readonly categories = this.store.categories;
+  protected readonly sort = this.store.sort;
+  protected readonly pagedIncidents = this.store.pagedIncidents;
+  protected readonly totalPages = this.store.totalPages;
+  protected readonly currentPageNumber = this.store.currentPageNumber;
+  protected readonly hasPreviousPage = this.store.hasPreviousPage;
+  protected readonly hasNextPage = this.store.hasNextPage;
+  protected readonly pageRange = this.store.pageRange;
+  protected readonly pageSize = this.store.pageSize;
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly filters = this.store.filters;
+  protected readonly loading = this.store.loading;
+  protected readonly error = this.store.error;
+  protected readonly loaded = this.store.loaded;
+
+  /** Estado puramente visual: no describe el dominio, no va al store. */
+  protected readonly searching = signal(false);
+  protected readonly searchError = signal<string | null>(null);
+  protected readonly autoRefresh = signal(false);
+
+  /**
+   * Incidencia pendiente de confirmar su eliminación.
+   *
+   * Guardar la incidencia entera —y no solo un booleano— permite nombrarla
+   * en el diálogo, que es lo que evita borrar la que no era.
+   */
+  protected readonly pendingDeletion = signal<Incident | null>(null);
+
+  // --- Búsqueda reactiva ---------------------------------------------------
+
+  /**
+   * El flujo RxJS se queda en el componente, no en el store.
+   *
+   * La espera de 300 ms y la cancelación son decisiones de **interacción**
+   * —dependen de lo rápido que teclee una persona—, no del dominio. El
+   * store solo recibe el resultado a través de una acción.
+   */
   private readonly search = toSignal(
     toObservable(computed(() => this.filters().searchTerm)).pipe(
       debounceTime(SEARCH_DEBOUNCE_MS),
@@ -335,6 +343,7 @@ export class IncidentList {
     this.store.toggleSelection(incident.id);
   }
 
+  /** El hijo pide eliminar; aquí solo se abre la confirmación. */
   /** Marca que se pidió borrar el lote; el diálogo confirma. */
   private readonly bulkDeletionPending = signal(false);
   protected readonly bulkDeletionRequested = this.bulkDeletionPending.asReadonly();
@@ -389,7 +398,6 @@ export class IncidentList {
       });
   }
 
-  /** El hijo pide eliminar; aquí solo se abre la confirmación. */
   protected onDeleteRequested(incident: Incident): void {
     this.pendingDeletion.set(incident);
   }
@@ -422,6 +430,10 @@ export class IncidentList {
 
   // --- Ciclo de vida -------------------------------------------------------
 
+  /**
+   * Temporizador controlado: el `interval` solo existe mientras el refresco
+   * está activo, y `takeUntilDestroyed` lo corta con el componente.
+   */
   private startAutoRefresh(): void {
     toObservable(this.autoRefresh)
       .pipe(
@@ -432,6 +444,12 @@ export class IncidentList {
       .subscribe(() => this.reloadIncidents());
   }
 
+  /**
+   * Ejecuta la consulta y anota el error si falla.
+   *
+   * El caso de uso deja el resultado en el modelo de lectura por su cuenta;
+   * aquí solo queda decidir qué se le enseña al usuario si no llega.
+   */
   private reloadIncidents(): void {
     this.store.clearError();
 
@@ -443,6 +461,7 @@ export class IncidentList {
     });
   }
 
+  /** `addEventListener` no lo limpia Angular: la baja se registra a mano. */
   private reloadWhenBackOnline(): void {
     const onOnline = () => this.reloadIncidents();
 

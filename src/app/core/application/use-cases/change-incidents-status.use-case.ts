@@ -1,6 +1,6 @@
 import { Observable, forkJoin, map, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Incident, IncidentStatus, IncidentStatusEnum } from '../../domain/models/incident.model';
+import { Incident, IncidentStatusEnum } from '../../domain/models/incident.model';
 import { UpdateIncidentStatusUseCase } from './update-incident-status.use-case';
 
 /** Resultado de aplicar un cambio de estado a varias incidencias. */

@@ -16,6 +16,8 @@
 
   <h3 class="dashboard-stats-title">Distribución por estado</h3>
 
+  <!-- Barras con `<meter>`: el navegador ya aporta el rol y el valor a las
+       tecnologías de asistencia, así que no hace falta ARIA a mano. -->
   <ul class="dashboard-stats-breakdown">
     @for (row of breakdown(); track row.status) {
       <li class="dashboard-stats-row">

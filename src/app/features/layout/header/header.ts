@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../../core/infrastructure/services/auth-service';
 import { FocusWithin } from '../../../shared/directives/focus-within';
+import { SESSION } from '../../../core/infrastructure/di/tokens';
 
 @Component({
   selector: 'app-header',
@@ -11,7 +11,7 @@ import { FocusWithin } from '../../../shared/directives/focus-within';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Header {
-  private readonly authService = inject(AuthService);
+  private readonly authService = inject(SESSION);
   private readonly router = inject(Router);
 
   @Input() systemTitle = '';

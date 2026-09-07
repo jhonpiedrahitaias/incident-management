@@ -13,7 +13,7 @@ import { EmptyState } from './empty-state';
 })
 class HostComponent {}
 
-describe('Estado vacío', () => {
+describe('EmptyState', () => {
   let fixture: ComponentFixture<HostComponent>;
 
   beforeEach(async () => {
@@ -23,11 +23,11 @@ describe('Estado vacío', () => {
     fixture.detectChanges();
   });
 
-  it('Debería crear', () => {
+  it('should create', () => {
     expect(fixture.nativeElement.querySelector('.empty-state')).toBeTruthy();
   });
 
-  it('Muestra el mensaje y la aclaración', () => {
+  it('muestra el mensaje y la aclaración', () => {
     expect(fixture.nativeElement.querySelector('.empty-state-message').textContent).toContain(
       'No hay incidencias registradas.',
     );
@@ -36,7 +36,7 @@ describe('Estado vacío', () => {
     );
   });
 
-  it('Proyecta la acción opcional', () => {
+  it('proyecta la acción opcional', () => {
     expect(fixture.nativeElement.querySelector('#projected-action')).toBeTruthy();
   });
 });
@@ -48,7 +48,7 @@ describe('Estado vacío', () => {
 class MinimalHostComponent {}
 
 describe('EmptyState sin aclaración ni acción', () => {
-  it('No deja rastro de lo que no se le pasa', async () => {
+  it('no deja rastro de lo que no se le pasa', async () => {
     await TestBed.configureTestingModule({ imports: [MinimalHostComponent] }).compileComponents();
     const fixture = TestBed.createComponent(MinimalHostComponent);
     fixture.detectChanges();
