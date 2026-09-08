@@ -25,14 +25,23 @@ describe('FocusWithin', () => {
     fixture.detectChanges();
   });
 
-  it('Debería crear an instance', () => {
+  it('should create an instance', () => {
     expect(panel()).toBeTruthy();
   });
 
-  it('No marca nada mientras el foco está fuera', () => {
+  it('no marca nada mientras el foco está fuera', () => {
     expect(panel().classList).not.toContain('has-focus-within');
   });
-  
+
+  it('marca el elemento cuando el foco entra con teclado', () => {
+    // `.focus()` es exactamente lo que hace el navegador al tabular:
+    // dispara un focusin real que se propaga hasta el host.
+    element('inside-a').focus();
+    fixture.detectChanges();
+
+    expect(panel().classList).toContain('has-focus-within');
+  });
+
   it('quita la marca cuando el foco se pierde sin destino (relatedTarget nulo)', () => {
     element('inside-a').focus();
     fixture.detectChanges();

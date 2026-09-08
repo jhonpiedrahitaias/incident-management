@@ -42,20 +42,20 @@ describe('guards', () => {
   }
 
   describe('authGuard', () => {
-    it('Deja pasar con sesión iniciada', async () => {
+    it('deja pasar con sesión iniciada', async () => {
       await signIn('REQUESTER');
 
       expect(run(authGuard)).toBe(true);
     });
 
-    it('Sin sesión redirige al inicio de sesión', () => {
+    it('sin sesión redirige al inicio de sesión', () => {
       const result = run(authGuard);
 
       expect(result).toEqual(jasmine.any(UrlTree));
       expect(String(result)).toContain('/login');
     });
 
-    it('Conserva el destino en returnUrl', () => {
+    it('conserva el destino en returnUrl', () => {
       const result = run(authGuard, '/incidents/inc-003');
 
       expect(String(result)).toContain('returnUrl=%2Fincidents%2Finc-003');
@@ -63,19 +63,19 @@ describe('guards', () => {
   });
 
   describe('roleGuard', () => {
-    it('Deja pasar si el rol está entre los permitidos', async () => {
+    it('deja pasar si el rol está entre los permitidos', async () => {
       await signIn('ADMIN');
 
       expect(run(roleGuard('ADMIN', 'AGENT'))).toBe(true);
     });
 
-    it('Deja pasar a cualquiera de los roles de la lista', async () => {
+    it('deja pasar a cualquiera de los roles de la lista', async () => {
       await signIn('AGENT');
 
       expect(run(roleGuard('ADMIN', 'AGENT'))).toBe(true);
     });
 
-    it('Con sesión pero sin permiso manda a acceso denegado', async () => {
+    it('con sesión pero sin permiso manda a acceso denegado', async () => {
       await signIn('REQUESTER');
 
       const result = run(roleGuard('ADMIN'));
@@ -85,14 +85,14 @@ describe('guards', () => {
       expect(String(result)).not.toContain('/login');
     });
 
-    it('Sin sesión manda al inicio de sesión, no a acceso denegado', () => {
+    it('sin sesión manda al inicio de sesión, no a acceso denegado', () => {
       const result = run(roleGuard('ADMIN'));
 
       expect(String(result)).toContain('/login');
       expect(String(result)).not.toContain('/forbidden');
     });
 
-    it('Una lista de roles vacía no deja pasar a nadie', async () => {
+    it('una lista de roles vacía no deja pasar a nadie', async () => {
       await signIn('ADMIN');
 
       expect(String(run(roleGuard()))).toContain('/forbidden');
@@ -100,28 +100,28 @@ describe('guards', () => {
   });
 
   describe('permisos del servicio', () => {
-    it('Un ADMIN puede administrar y gestionar incidencias', fakeAsync(async () => {
+    it('un ADMIN puede administrar y gestionar incidencias', fakeAsync(async () => {
       await signIn('ADMIN');
 
       expect(authService.canAdminister()).toBe(true);
       expect(authService.canManageIncidents()).toBe(true);
     }));
 
-    it('Un AGENT gestiona incidencias pero no administra', async () => {
+    it('un AGENT gestiona incidencias pero no administra', async () => {
       await signIn('AGENT');
 
       expect(authService.canAdminister()).toBe(false);
       expect(authService.canManageIncidents()).toBe(true);
     });
 
-    it('Un REQUESTER no puede ni lo uno ni lo otro', async () => {
+    it('un REQUESTER no puede ni lo uno ni lo otro', async () => {
       await signIn('REQUESTER');
 
       expect(authService.canAdminister()).toBe(false);
       expect(authService.canManageIncidents()).toBe(false);
     });
 
-    it('Sin sesión no hay permiso alguno', () => {
+    it('sin sesión no hay permiso alguno', () => {
       expect(authService.canAdminister()).toBe(false);
       expect(authService.canManageIncidents()).toBe(false);
       expect(authService.role()).toBeNull();

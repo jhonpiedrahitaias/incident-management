@@ -9,7 +9,7 @@ import { loadingInterceptor } from '../core/infrastructure/http/loading-intercep
 import { AuthService } from '../core/infrastructure/services/auth-service';
 import { IncidentStore } from '../core/infrastructure/state/incident-store';
 import { IncidentApi } from '../core/infrastructure/api/incident-api';
-import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, CHANGE_INCIDENTS_STATUS } from '../core/infrastructure/di/tokens';
+import { INCIDENT_REPOSITORY, USER_REPOSITORY, AUTH_GATEWAY, CREATE_INCIDENT, INCIDENT_CACHE, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, CHANGE_INCIDENTS_STATUS, SESSION } from '../core/infrastructure/di/tokens';
 import { UserService } from '../core/infrastructure/services/user-service';
 import { CreateIncidentUseCase } from '../core/application/use-cases/create-incident.use-case';
 import { ListIncidentsUseCase } from '../core/application/use-cases/list-incidents.use-case';
@@ -53,6 +53,7 @@ export function provideTestApi(): EnvironmentProviders {
     { provide: USER_REPOSITORY, useExisting: UserService },
     { provide: AUTH_GATEWAY, useExisting: AuthService },
     { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
+    { provide: SESSION, useExisting: AuthService },
     { provide: INCIDENT_CACHE, useExisting: IncidentStore },
     {
       provide: CREATE_INCIDENT,

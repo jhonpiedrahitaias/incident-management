@@ -1,10 +1,9 @@
 # Gestión de incidencias
 
-Aplicación de gestión de incidencias técnicas construida con **Angular 20**. 
-Caracteristicas: Registro, seguimiento,
-filtrado y resolución de incidencias, con acceso por roles.
+Aplicación de gestión de incidencias técnicas construida con **Angular**.
 
----
+Es un proyecto de aprendizaje: funciona de principio a fin, pero el backend
+está simulado. Lo que eso implica está escrito, sin adornos.
 
 ## Empezar
 
@@ -29,14 +28,12 @@ Cualquiera de estas cuentas, todas con la contraseña **`angular20`**:
 | `luis.gomez@example.com` | **AGENT** | gestionar incidencias, sin administrar |
 | `carlos.pena@example.com` | **REQUESTER** | registrar y consultar las suyas |
 
-Las credenciales están a la vista en la propia pantalla de acceso. Son de
-demostración y **están en el código a propósito** (riesgo R-03): sin ellas
-nadie podría probar la aplicación. Es un patrón que no debe imitarse con
-credenciales reales.
+Las credenciales están a la vista en la propia pantalla de acceso.
 
 ### Requisitos
 
-Node.js, y npm. El Angular
+Node.js **22.22.1** o compatible, y npm **10.9.4** o compatible. El Angular
+CLI viene en las dependencias del proyecto: no hace falta instalarlo aparte.
 
 ---
 
@@ -47,7 +44,7 @@ Node.js, y npm. El Angular
 | `npm start` | servidor de desarrollo con recarga automática, en el puerto 4300 |
 | `npm run build` | compila para producción en `dist/incident-management/browser/` |
 | `npm test` | pruebas en modo vigilancia, con navegador abierto |
-| `npm run test:ci` | pruebas una vez, sin ventana — **486 pruebas** |
+| `npm run test:ci` | pruebas una vez, sin ventana — **618 pruebas** |
 | `npm run test:coverage` | pruebas con informe de cobertura en `coverage/` |
 | `npm run lint` | análisis estático con `angular-eslint` |
 
@@ -102,22 +99,21 @@ src/app/
 **La regla que lo sostiene**: las dependencias apuntan hacia adentro.
 `domain` no importa nada; `application` solo importa `domain`; `infrastructure`
 puede importar ambas. **No es un acuerdo, es una regla de ESLint**: un
-`import` de Angular en `domain/` o `application/` falla el linter. Los
-diagramas están en [`docs/arquitectura.md`](docs/arquitectura.md).
-
-En números: 21 componentes, 5 servicios y stores, 2 directivas, 2 pipes y 34
-archivos de pruebas.
-
+`import` de Angular en `domain/` o `application/` falla el linter.
 ---
 
 ## Pruebas
 
 ```bash
-npm run test:ci       
-npm run test:coverage  # informe en coverage/
+npm run test:ci        
+npm run test:coverage 
 ```
 
-Usamos Jasmiine y Karma
+Los umbrales de cobertura (**90 %** líneas y funciones, **80 %** ramas) están
+configurados en `karma.conf.js`.
+
+Con una advertencia que conviene tener presente: la cobertura mide ejecución,
+no verificación. 
 ---
 
 ## Despliegue
@@ -125,7 +121,7 @@ Usamos Jasmiine y Karma
 La compilación genera archivos estáticos: sirve cualquier hosting estático.
 
 ```bash
-npm run build     # → dist/incident-management/browser/
+npm run build
 ```
 
 **Lo único que hay que configurar es el reenvío de rutas.** El enrutador vive
@@ -133,9 +129,3 @@ en el navegador: el servidor no conoce `/incidents/inc-003`, así que sin esta
 regla recargar esa dirección devolvería un 404. Todo lo que no sea un archivo
 real debe responderse con `index.html`, y con un **200**, no un 301 — es una
 reescritura, no una redirección.
-
-El repositorio ya trae la configuración hecha para dos servicios--
-
-## Documentación
-
-| Doc

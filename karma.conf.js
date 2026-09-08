@@ -27,11 +27,11 @@ module.exports = function (config) {
         { type: 'lcovonly' }, // formato estándar para CI
       ],
       check: {
-        global: {
-          statements: 50,
-          branches: 50,
-          functions: 50,
-          lines: 50,
+       global: {
+          statements: 90,
+          branches: 80,
+          functions: 90,
+          lines: 90,
         },
       },
     },

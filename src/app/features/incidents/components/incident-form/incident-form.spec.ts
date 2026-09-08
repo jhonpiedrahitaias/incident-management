@@ -1,8 +1,7 @@
-//IA
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IncidentForm, IncidentFormValue } from './incident-form';
-import { IncidentPriorityEnum } from '../../../../core/domain/models/incident.model';
+import { IncidentPriorityEnum, IncidentStatusEnum } from '../../../../core/domain/models/incident.model';
 
 const VALID = {
   title: 'Fuga en el aire acondicionado',
@@ -30,23 +29,23 @@ describe('IncidentForm', () => {
     fixture.detectChanges();
   });
 
-  it('Debería crear', () => {
+  it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('Estado inicial', () => {
-    it('Arranca vacío y con el envío deshabilitado', () => {
+  describe('estado inicial', () => {
+    it('arranca vacío y con el envío deshabilitado', () => {
       expect(submitButton().disabled).toBe(true);
       expect(field('#incident-title').value).toBe('');
     });
 
-    it('No muestra ningún error antes de interactuar', () => {
+    it('no muestra ningún error antes de interactuar', () => {
       expect(errors().length).toBe(0);
     });
   });
 
-  describe('Validación', () => {
-    it('Muestra el error solo después de que el usuario toque el campo', () => {
+  describe('validación', () => {
+    it('muestra el error solo después de que el usuario toque el campo', () => {
       expect(errorFor('incident-title')).toBeNull();
 
       touch('#incident-title');
@@ -54,21 +53,21 @@ describe('IncidentForm', () => {
       expect(errorFor('incident-title')?.textContent).toContain('obligatorio');
     });
 
-    it('Exige una longitud mínima en el título', () => {
+    it('exige una longitud mínima en el título', () => {
       type_('#incident-title', 'abc');
       touch('#incident-title');
 
       expect(errorFor('incident-title')?.textContent).toContain('al menos 5 caracteres');
     });
 
-    it('Exige una longitud mínima en la descripción', () => {
+    it('exige una longitud mínima en la descripción', () => {
       type_('#incident-description', 'corto');
       touch('#incident-description');
 
       expect(errorFor('incident-description')?.textContent).toContain('al menos 10 caracteres');
     });
 
-    it('Rechaza títulos demasiado largos', () => {
+    it('rechaza títulos demasiado largos', () => {
       type_('#incident-title', 'a'.repeat(101));
       touch('#incident-title');
 
@@ -76,7 +75,7 @@ describe('IncidentForm', () => {
       expect(submitButton().disabled).toBe(true);
     });
 
-    it('Marca el campo inválido con aria-invalid y lo asocia a su mensaje', () => {
+    it('marca el campo inválido con aria-invalid y lo asocia a su mensaje', () => {
       touch('#incident-title');
 
       const input = field('#incident-title');
@@ -85,7 +84,7 @@ describe('IncidentForm', () => {
       expect(errorFor('incident-title')?.id).toBe('incident-title-error');
     });
 
-    it('El envío sigue deshabilitado mientras falte cualquier campo', () => {
+    it('el envío sigue deshabilitado mientras falte cualquier campo', () => {
       fillValidForm();
       expect(submitButton().disabled).toBe(false);
 
@@ -94,20 +93,20 @@ describe('IncidentForm', () => {
     });
   });
 
-  describe('Envío', () => {
-    it('No emite nada si el formulario es inválido', () => {
+  describe('envío', () => {
+    it('no emite nada si el formulario es inválido', () => {
       submit();
 
       expect(emitted.length).toBe(0);
     });
 
-    it('Al intentar enviar vacío, revela los errores de todos los campos', () => {
+    it('al intentar enviar vacío, revela los errores de todos los campos', () => {
       submit();
 
       expect(errors().length).toBe(4);
     });
 
-    it('Emite los valores cuando el formulario es válido', () => {
+    it('emite los valores cuando el formulario es válido', () => {
       fillValidForm();
 
       submit();
@@ -117,12 +116,12 @@ describe('IncidentForm', () => {
         title: VALID.title,
         description: VALID.description,
         category: VALID.category,
-        priority: VALID.priority as IncidentPriorityEnum,
+        priority: IncidentPriorityEnum.HIGH,
         tags: [],
       });
     });
 
-    it('Recorta los espacios sobrantes antes de emitir', () => {
+    it('recorta los espacios sobrantes antes de emitir', () => {
       fillValidForm();
       type_('#incident-title', `   ${VALID.title}   `);
 
@@ -131,7 +130,7 @@ describe('IncidentForm', () => {
       expect(emitted[0].title).toBe(VALID.title);
     });
 
-    it('Limpia el formulario tras un registro correcto', () => {
+    it('limpia el formulario tras un registro correcto', () => {
       fillValidForm();
 
       submit();
@@ -141,7 +140,7 @@ describe('IncidentForm', () => {
       expect(submitButton().disabled).toBe(true);
     });
 
-    it('No muestra errores en el formulario recién limpiado', () => {
+    it('no muestra errores en el formulario recién limpiado', () => {
       fillValidForm();
 
       submit();
@@ -149,7 +148,7 @@ describe('IncidentForm', () => {
       expect(errors().length).toBe(0);
     });
 
-    it('Confirma el registro con un mensaje anunciable', () => {
+    it('confirma el registro con un mensaje anunciable', () => {
       fillValidForm();
 
       submit();
@@ -158,12 +157,12 @@ describe('IncidentForm', () => {
       expect(status.textContent).toContain(VALID.title);
     });
 
-    it('Permite registrar dos incidencias seguidas', () => {
+    it('permite registrar dos incidencias seguidas', () => {
       fillValidForm();
       submit();
 
       fillValidForm();
-      // Ojo con el título: «prueba» es una palabra restringida.
+      // Ojo con el título: «prueba» es una palabra restringida (Día 12).
       type_('#incident-title', 'Segunda incidencia registrada');
       submit();
 
@@ -172,7 +171,7 @@ describe('IncidentForm', () => {
     });
   });
 
-  describe('Limpiar', () => {
+  describe('limpiar', () => {
     it('vacía los campos sin emitir nada', () => {
       fillValidForm();
 
@@ -182,18 +181,18 @@ describe('IncidentForm', () => {
       expect(emitted.length).toBe(0);
     });
 
-    it('Al dar de alta la acción se llama Limpiar', () => {
+    it('al dar de alta la acción se llama Limpiar', () => {
       expect(clickableLabels()).toContain('Limpiar');
       expect(clickableLabels()).not.toContain('Restablecer');
     });
   });
 
-  describe('Cancelar', () => {
-    it('Ofrece un botón de cancelar', () => {
+  describe('cancelar', () => {
+    it('ofrece un botón de cancelar', () => {
       expect(clickableLabels()).toContain('Cancelar');
     });
 
-    it('Emite el evento sin enviar el formulario', () => {
+    it('emite el evento sin enviar el formulario', () => {
       let cancelledTimes = 0;
       component.cancelled.subscribe(() => cancelledTimes++);
       fillValidForm();
@@ -204,7 +203,7 @@ describe('IncidentForm', () => {
       expect(emitted.length).toBe(0);
     });
 
-    it('Cancela también con el formulario inválido o a medias', () => {
+    it('cancela también con el formulario inválido o a medias', () => {
       let cancelledTimes = 0;
       component.cancelled.subscribe(() => cancelledTimes++);
       type_('#incident-title', 'abc');
@@ -214,7 +213,7 @@ describe('IncidentForm', () => {
       expect(cancelledTimes).toBe(1);
     });
 
-    it('No es de tipo submit: no dispara el envío', () => {
+    it('no es de tipo submit: no dispara el envío', () => {
       const cancel = Array.from<HTMLButtonElement>(
         fixture.nativeElement.querySelectorAll('button'),
       ).find((b) => b.textContent?.trim() === 'Cancelar')!;
@@ -223,71 +222,8 @@ describe('IncidentForm', () => {
     });
   });
 
-  function clickableLabels(): string[] {
-    return Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).map(
-      (button) => button.textContent?.trim() ?? '',
-    );
-  }
 
-
-  // --- utilidades ----------------------------------------------------------
-
-  function field(selector: string): HTMLInputElement {
-    return fixture.nativeElement.querySelector(selector);
-  }
-
-  function type_(selector: string, value: string): void {
-    const input = field(selector);
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-  }
-
-  function choose(selector: string, value: string): void {
-    const select: HTMLSelectElement = fixture.nativeElement.querySelector(selector);
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-  }
-
-  function touch(selector: string): void {
-    field(selector).dispatchEvent(new Event('blur'));
-    fixture.detectChanges();
-  }
-
-  function fillValidForm(): void {
-    type_('#incident-title', VALID.title);
-    type_('#incident-description', VALID.description);
-    type_('#incident-category', VALID.category);
-    choose('#incident-priority', VALID.priority);
-  }
-
-  function submit(): void {
-    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
-    fixture.detectChanges();
-  }
-
-  function submitButton(): HTMLButtonElement {
-    return fixture.nativeElement.querySelector('button[type="submit"]');
-  }
-
-  function clickButton(label: string): void {
-    const buttons = Array.from<HTMLButtonElement>(
-      fixture.nativeElement.querySelectorAll('button'),
-    );
-    buttons.find((b) => b.textContent?.trim() === label)?.click();
-    fixture.detectChanges();
-  }
-
-  function errors(): HTMLElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('.incident-form-error'));
-  }
-
-  function errorFor(fieldId: string): HTMLElement | null {
-    return fixture.nativeElement.querySelector(`#${fieldId}-error`);
-  }
-
-    // --- Día 8: render con datos (modo edición) ------------------------------
+  // --- Día 8: render con datos (modo edición) ------------------------------
 
   describe('modo edición: render con datos', () => {
     const EXISTENTE: IncidentFormValue = {
@@ -376,4 +312,229 @@ describe('IncidentForm', () => {
       expect(submitButton().disabled).toBe(true);
     });
   });
+
+  function clickableLabels(): string[] {
+    return Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).map(
+      (button) => button.textContent?.trim() ?? '',
+    );
+  }
+
+  // --- Día 12: validadores personalizados y etiquetas dinámicas ------------
+
+  describe('validadores personalizados', () => {
+    it('rechaza un título formado solo por espacios', () => {
+      fillValidForm();
+      type_('#incident-title', '          ');
+      touch('#incident-title');
+
+      expect(errorFor('incident-title')?.textContent).toContain('solo espacios');
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('rechaza un título con palabras restringidas', () => {
+      fillValidForm();
+      type_('#incident-title', 'Incidencia de prueba del sistema');
+      touch('#incident-title');
+
+      expect(errorFor('incident-title')?.textContent).toContain('No se permiten estas palabras');
+      expect(errorFor('incident-title')?.textContent).toContain('prueba');
+      expect(submitButton().disabled).toBe(true);
+    });
+
+    it('acepta un título que solo contiene la palabra restringida como subcadena', () => {
+      fillValidForm();
+      type_('#incident-title', 'Fallo en el contestador automático');
+
+      expect(errorFor('incident-title')).toBeNull();
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it('rechaza una descripción formada solo por espacios', () => {
+      fillValidForm();
+      type_('#incident-description', '               ');
+      touch('#incident-description');
+
+      expect(errorFor('incident-description')?.textContent).toContain('solo espacios');
+    });
+  });
+
+  describe('etiquetas dinámicas', () => {
+    it('empieza sin etiquetas', () => {
+      expect(tagInputs().length).toBe(0);
+      expect(fixture.nativeElement.textContent).toContain('Sin etiquetas');
+    });
+
+    it('añade y quita etiquetas en tiempo de ejecución', () => {
+      clickButton('Añadir etiqueta');
+      clickButton('Añadir etiqueta');
+      expect(tagInputs().length).toBe(2);
+
+      clickButton('Quitar');
+
+      expect(tagInputs().length).toBe(1);
+    });
+
+    it('quita la etiqueta correcta, no siempre la última', () => {
+      addTags(['red', 'servidor', 'urgente']);
+
+      // Se elimina la del medio.
+      tagRemoveButtons()[1].click();
+      fixture.detectChanges();
+
+      expect(tagValues()).toEqual(['red', 'urgente']);
+    });
+
+    it('no deja superar el máximo de etiquetas', () => {
+      for (let i = 0; i < 5; i++) {
+        clickButton('Añadir etiqueta');
+      }
+
+      expect(tagInputs().length).toBe(5);
+      expect(addTagButton().disabled).toBe(true);
+    });
+
+    it('rechaza etiquetas duplicadas sin distinguir mayúsculas', () => {
+      addTags(['Red', ' red ']);
+
+      submit();
+
+      expect(tagsError()?.textContent).toContain('etiquetas repetidas');
+      expect(emitted.length).toBe(0);
+    });
+
+    it('exige que una etiqueta añadida no quede vacía', () => {
+      fillValidForm();
+      clickButton('Añadir etiqueta');
+
+      submit();
+
+      expect(emitted.length).toBe(0);
+      expect(errorFor('incident-tag-0')?.textContent).toContain('obligatorio');
+    });
+
+    it('emite las etiquetas junto al resto del formulario', () => {
+      fillValidForm();
+      addTags(['red', 'servidor']);
+
+      submit();
+
+      expect(emitted[0].tags).toEqual(['red', 'servidor']);
+    });
+
+    it('recorta los espacios de cada etiqueta', () => {
+      fillValidForm();
+      addTags(['  red  ']);
+
+      submit();
+
+      expect(emitted[0].tags).toEqual(['red']);
+    });
+
+    it('emite un arreglo vacío si no se añadió ninguna', () => {
+      fillValidForm();
+
+      submit();
+
+      expect(emitted[0].tags).toEqual([]);
+    });
+
+    it('vacía las etiquetas al limpiar el formulario', () => {
+      fillValidForm();
+      addTags(['red', 'servidor']);
+
+      submit();
+
+      // `form.reset()` no vacía un FormArray por sí solo.
+      expect(tagInputs().length).toBe(0);
+    });
+  });
+
+  function tagInputs(): HTMLInputElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('.incident-form-tag input'));
+  }
+
+  function tagValues(): string[] {
+    return tagInputs().map((input) => input.value);
+  }
+
+  function tagRemoveButtons(): HTMLButtonElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('.incident-form-tag button'));
+  }
+
+  function addTagButton(): HTMLButtonElement {
+    return Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Añadir etiqueta',
+    )!;
+  }
+
+  function addTags(values: string[]): void {
+    for (const [index, value] of values.entries()) {
+      clickButton('Añadir etiqueta');
+      const input = tagInputs()[index];
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+  }
+
+  function tagsError(): HTMLElement | null {
+    return fixture.nativeElement.querySelector('#incident-tags-error');
+  }
+
+  // --- utilidades ----------------------------------------------------------
+
+  function field(selector: string): HTMLInputElement {
+    return fixture.nativeElement.querySelector(selector);
+  }
+
+  function type_(selector: string, value: string): void {
+    const input = field(selector);
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function choose(selector: string, value: string): void {
+    const select: HTMLSelectElement = fixture.nativeElement.querySelector(selector);
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
+
+  function touch(selector: string): void {
+    field(selector).dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+  }
+
+  function fillValidForm(): void {
+    type_('#incident-title', VALID.title);
+    type_('#incident-description', VALID.description);
+    type_('#incident-category', VALID.category);
+    choose('#incident-priority', VALID.priority);
+  }
+
+  function submit(): void {
+    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+  }
+
+  function submitButton(): HTMLButtonElement {
+    return fixture.nativeElement.querySelector('button[type="submit"]');
+  }
+
+  function clickButton(label: string): void {
+    const buttons = Array.from<HTMLButtonElement>(
+      fixture.nativeElement.querySelectorAll('button'),
+    );
+    buttons.find((b) => b.textContent?.trim() === label)?.click();
+    fixture.detectChanges();
+  }
+
+  function errors(): HTMLElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('.incident-form-error'));
+  }
+
+  function errorFor(fieldId: string): HTMLElement | null {
+    return fixture.nativeElement.querySelector(`#${fieldId}-error`);
+  }
 });

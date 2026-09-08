@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { AuthService } from '../../../../core/infrastructure/services/auth-service';
-import { UserService } from '../../../../core/infrastructure/services/user-service';
+import { SESSION, USER_REPOSITORY } from '../../../../core/infrastructure/di/tokens';
 
 @Component({
   selector: 'app-admin-users',
@@ -10,8 +9,8 @@ import { UserService } from '../../../../core/infrastructure/services/user-servi
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminUsers {
-  private readonly userService = inject(UserService);
-  private readonly authService = inject(AuthService);
+  private readonly userService = inject(USER_REPOSITORY);
+  private readonly authService = inject(SESSION);
 
   protected readonly users = this.userService.getAll();
 
