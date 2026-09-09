@@ -3,7 +3,7 @@ import { IncidentStore } from '../../../../core/infrastructure/state/incident-st
 import { IncidentStatus, IncidentStatusEnum } from '../../../../core/domain/models/incident.model';
 
 /** Etiqueta legible de cada estado, para el desglose. */
-const STATUS_LABELS: Readonly<Record<IncidentStatus, string>> = {
+const STATUS_LABELS: Readonly<Record<IncidentStatusEnum, string>> = {
   OPEN: 'Abiertas',
   IN_PROGRESS: 'En progreso',
   RESOLVED: 'Resueltas',
@@ -32,6 +32,12 @@ export class DashboardStats {
   protected readonly criticalCount = this.store.criticalCount;
   protected readonly openCount = this.store.openCount;
 
+  /**
+   * Desglose por estado, con su porcentaje.
+   *
+   * Es lo que justifica que este panel sea más que los tres contadores del
+   * listado: da la distribución completa.
+   */
   protected readonly breakdown = computed(() => {
     const incidents = this.store.incidents();
     const total = incidents.length;

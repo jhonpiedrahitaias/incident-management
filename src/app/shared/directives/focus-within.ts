@@ -1,6 +1,5 @@
 import { Directive, ElementRef, inject, signal } from '@angular/core';
 
-
 @Directive({
   selector: '[appFocusWithin]',
   host: {
@@ -12,8 +11,13 @@ import { Directive, ElementRef, inject, signal } from '@angular/core';
   },
 })
 export class FocusWithin {
-
+  /**
+   * Inyección de dependencias: Angular entrega la referencia al elemento
+   * anfitrión. Se necesita para saber si el foco salió de verdad del
+   * componente o solo se movió entre sus hijos.
+   */
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   private readonly focusWithin = signal(false);
 
   /** `true` mientras el foco esté dentro del elemento. */
@@ -26,6 +30,9 @@ export class FocusWithin {
   protected onFocusOut(event: FocusEvent): void {
     const nextTarget = event.relatedTarget;
 
+    // Al tabular entre dos botones de la misma tarjeta, `focusout` salta
+    // aunque el foco siga dentro. Sin esta comprobación, la marca
+    // parpadearía en cada salto.
     const stillInside =
       nextTarget instanceof Node && this.host.nativeElement.contains(nextTarget);
 

@@ -11,11 +11,11 @@ import {
 /** Los validadores son funciones puras: se prueban sin TestBed ni DOM. */
 describe('validadores de incidencias', () => {
   describe('notOnlyWhitespace', () => {
-    it('Acepta un texto con contenido real', () => {
+    it('acepta un texto con contenido real', () => {
       expect(notOnlyWhitespace(new FormControl('Servidor caído'))).toBeNull();
     });
 
-    it('Acepta un texto con espacios alrededor', () => {
+    it('acepta un texto con espacios alrededor', () => {
       expect(notOnlyWhitespace(new FormControl('  Servidor caído  '))).toBeNull();
     });
 
@@ -25,11 +25,11 @@ describe('validadores de incidencias', () => {
       });
     }
 
-    it('No opina sobre el control vacío: de eso se ocupa required', () => {
+    it('no opina sobre el control vacío: de eso se ocupa required', () => {
       expect(notOnlyWhitespace(new FormControl(''))).toBeNull();
     });
 
-    it('Ignora los valores que no son texto', () => {
+    it('ignora los valores que no son texto', () => {
       expect(notOnlyWhitespace(new FormControl(42))).toBeNull();
       expect(notOnlyWhitespace(new FormControl(null))).toBeNull();
     });
@@ -38,41 +38,41 @@ describe('validadores de incidencias', () => {
   describe('forbiddenWords', () => {
     const validator = forbiddenWords(['test', 'prueba']);
 
-    it('Acepta un texto sin palabras restringidas', () => {
+    it('acepta un texto sin palabras restringidas', () => {
       expect(validator(new FormControl('Caída del servidor de facturación'))).toBeNull();
     });
 
-    it('Rechaza el texto que contiene una palabra restringida', () => {
+    it('rechaza el texto que contiene una palabra restringida', () => {
       expect(validator(new FormControl('Incidencia de test'))).toEqual({
         forbiddenWords: { found: ['test'] },
       });
     });
 
-    it('No distingue mayúsculas', () => {
+    it('no distingue mayúsculas', () => {
       expect(validator(new FormControl('TEST del sistema'))).not.toBeNull();
     });
 
-    it('No distingue acentos', () => {
+    it('no distingue acentos', () => {
       expect(forbiddenWords(['prueba'])(new FormControl('Una prueba'))).not.toBeNull();
       expect(forbiddenWords(['revisión'])(new FormControl('Una revision'))).not.toBeNull();
     });
 
-    it('Informa de todas las palabras encontradas', () => {
+    it('informa de todas las palabras encontradas', () => {
       const result = validator(new FormControl('test y prueba'));
 
       expect(result?.['forbiddenWords'].found).toEqual(['test', 'prueba']);
     });
 
-    it('Compara por palabra completa, no por subcadena', () => {
+    it('compara por palabra completa, no por subcadena', () => {
       // "contestador" contiene "test", pero no es la palabra prohibida.
       expect(validator(new FormControl('Fallo en el contestador'))).toBeNull();
     });
 
-    it('Separa por signos de puntuación', () => {
+    it('separa por signos de puntuación', () => {
       expect(validator(new FormControl('Error: test.'))).not.toBeNull();
     });
 
-    it('No opina sobre el control vacío', () => {
+    it('no opina sobre el control vacío', () => {
       expect(validator(new FormControl(''))).toBeNull();
       expect(validator(new FormControl('   '))).toBeNull();
     });
@@ -81,56 +81,56 @@ describe('validadores de incidencias', () => {
   describe('maxItems', () => {
     const validator = maxItems(3);
 
-    it('Acepta una colección por debajo del tope', () => {
+    it('acepta una colección por debajo del tope', () => {
       expect(validator(array(['a', 'b']))).toBeNull();
     });
 
-    it('Acepta una colección justo en el tope', () => {
+    it('acepta una colección justo en el tope', () => {
       expect(validator(array(['a', 'b', 'c']))).toBeNull();
     });
 
-    it('Rechaza una colección por encima del tope', () => {
+    it('rechaza una colección por encima del tope', () => {
       expect(validator(array(['a', 'b', 'c', 'd']))).toEqual({
         maxItems: { max: 3, actual: 4 },
       });
     });
 
-    it('Acepta una colección vacía', () => {
+    it('acepta una colección vacía', () => {
       expect(validator(array([]))).toBeNull();
     });
   });
 
   describe('noDuplicates', () => {
-    it('Acepta elementos distintos', () => {
+    it('acepta elementos distintos', () => {
       expect(noDuplicates(array(['red', 'servidor']))).toBeNull();
     });
 
-    it('Rechaza elementos repetidos', () => {
+    it('rechaza elementos repetidos', () => {
       expect(noDuplicates(array(['red', 'red']))).toEqual({ duplicates: { values: ['red'] } });
     });
 
-    it('Compara sin distinguir mayúsculas ni espacios sobrantes', () => {
+    it('compara sin distinguir mayúsculas ni espacios sobrantes', () => {
       expect(noDuplicates(array(['Red', ' red ']))).not.toBeNull();
     });
 
-    it('Ignora los elementos aún vacíos', () => {
+    it('ignora los elementos aún vacíos', () => {
       // Una etiqueta recién añadida está vacía y no debe contar como repetida.
       expect(noDuplicates(array(['', '', 'red']))).toBeNull();
     });
 
-    it('Informa de todos los valores repetidos', () => {
+    it('informa de todos los valores repetidos', () => {
       const result = noDuplicates(array(['a', 'a', 'b', 'b', 'c']));
 
       expect(result?.['duplicates'].values).toEqual(['a', 'b']);
     });
 
-    it('Acepta una colección vacía', () => {
+    it('acepta una colección vacía', () => {
       expect(noDuplicates(array([]))).toBeNull();
     });
   });
 
   describe('normalizeTag', () => {
-    it('Recorta, pasa a minúsculas y colapsa los espacios internos', () => {
+    it('recorta, pasa a minúsculas y colapsa los espacios internos', () => {
       expect(normalizeTag('  Red   Interna  ')).toBe('red interna');
     });
   });

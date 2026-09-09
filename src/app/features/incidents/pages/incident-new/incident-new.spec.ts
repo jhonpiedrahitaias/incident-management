@@ -1,10 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { loadIncidents, prepareApi, provideTestApi } from '../../../../testing/api-testing';
+import { loadIncidents, loginForTest, prepareApi, provideTestApi } from '../../../../testing/api-testing';
 
 import { IncidentNew } from './incident-new';
 import { IncidentStore } from '../../../../core/infrastructure/state/incident-store';
-import { UserService } from '../../../../core/infrastructure/services/user-service';
+import { SESSION } from '../../../../core/infrastructure/di/tokens';
 
 describe('IncidentNew', () => {
   let component: IncidentNew;
@@ -22,7 +22,7 @@ describe('IncidentNew', () => {
 
   beforeEach(fakeAsync(() => {
     store = loadIncidents();
-
+    loginForTest('ADMIN');
     router = TestBed.inject(Router);
     spyOn(router, 'navigate');
 
@@ -40,13 +40,28 @@ describe('IncidentNew', () => {
   });
 
   it('Registra la incidencia con el usuario de la sesión', fakeAsync(() => {
-    const currentUser = TestBed.inject(UserService).currentUser();
+    const inSesion = TestBed.inject(SESSION).currentUser()!;
     const before = store.getAll().length;
 
     submitValidForm();
 
     expect(store.getAll().length).toBe(before + 1);
-    expect(store.getAll().at(-1)!.reporterId).toBe(currentUser.id);
+      expect(store.getAll().at(-1)!.reporterId).toBe(inSesion.id);
+  }));
+
+  it('el autor es quien tiene la sesión, no siempre el mismo usuario', fakeAsync(() => {
+    // Esta es la prueba que faltaba. Con la implementación anterior —pedir
+    // el usuario al repositorio— habría pasado igual con cualquier sesión,
+    // porque devolvía siempre el primero del juego de datos.
+    loginForTest('REQUESTER');
+
+    submitValidForm();
+
+    expect(store.getAll().at(-1)!.reporterId).toBe(
+      TestBed.inject(SESSION).currentUser()!.id,
+    );
+    // Y no el de Ana, que es la primera del conjunto.
+    expect(store.getAll().at(-1)!.reporterId).not.toBe('u-001');
   }));
 
   it('Navega al detalle de la incidencia recién creada', fakeAsync(() => {

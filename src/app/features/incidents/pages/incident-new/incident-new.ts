@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { CREATE_INCIDENT } from '../../../../core/infrastructure/di/tokens';
+import { CREATE_INCIDENT, SESSION } from '../../../../core/infrastructure/di/tokens';
 import { LoadingService } from '../../../../core/infrastructure/services/loading-service';
-import { UserService } from '../../../../core/infrastructure/services/user-service';
 import { IncidentForm, IncidentFormValue } from '../../components/incident-form/incident-form';
 
 @Component({
@@ -17,7 +16,7 @@ export class IncidentNew {
   // El caso de uso, no el store: esta pantalla ejecuta una operación de
   // negocio, no manipula estado.
   private readonly createIncident = inject(CREATE_INCIDENT);
-  private readonly userService = inject(UserService);
+   private readonly session = inject(SESSION);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -30,7 +29,7 @@ export class IncidentNew {
     this.submitError.set(null);
 
     this.createIncident
-      .execute({ ...value, reporterId: this.userService.currentUser().id })
+      .execute({ ...value, reporterId: this.session.currentUser()?.id ?? '' })
       .pipe(takeUntilDestroyed(this.destroyRef))
 
       .subscribe({

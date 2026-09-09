@@ -17,7 +17,7 @@ import { authTokenInterceptor } from './core/infrastructure/http/auth-token-inte
 import { correlationIdInterceptor } from './core/infrastructure/http/correlation-id-interceptor';
 import { errorHandlingInterceptor } from './core/infrastructure/http/error-handling-interceptor';
 import { loadingInterceptor } from './core/infrastructure/http/loading-interceptor';
-import { AUTH_GATEWAY, CHANGE_INCIDENTS_STATUS, CREATE_INCIDENT, INCIDENT_CACHE, INCIDENT_REPOSITORY, LIST_INCIDENTS, SESSION_STORE, UPDATE_INCIDENT_STATUS, USER_REPOSITORY } from './core/infrastructure/di/tokens';
+import { AUTH_GATEWAY, CHANGE_INCIDENTS_STATUS, CREATE_INCIDENT, INCIDENT_CACHE, INCIDENT_REPOSITORY, LIST_INCIDENTS, SESSION, SESSION_STORE, UPDATE_INCIDENT_STATUS, USER_REPOSITORY } from './core/infrastructure/di/tokens';
 import { IncidentApi } from './core/infrastructure/api/incident-api';
 import { AuthService } from './core/infrastructure/services/auth-service';
 import { UserService } from './core/infrastructure/services/user-service';
@@ -54,6 +54,7 @@ export const appConfig: ApplicationConfig = {
     { provide: USER_REPOSITORY, useExisting: UserService },
     { provide: AUTH_GATEWAY, useExisting: AuthService },
     { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
+    { provide: SESSION, useExisting: AuthService },
     // El store es quien mantiene el modelo de lectura en memoria.
     { provide: INCIDENT_CACHE, useExisting: IncidentStore },
 

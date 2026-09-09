@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { AuthService } from '../../../core/infrastructure/services/auth-service';
 import { RouterLink } from '@angular/router';
+import { SESSION } from '../../../core/infrastructure/di/tokens';
 
 @Component({
   selector: 'app-forbidden',
@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Forbidden {
-  private readonly authService = inject(AuthService);
+  private readonly authService = inject(SESSION);
   protected readonly role = this.authService.role;
   protected readonly userName = this.authService.currentUser;
 }
