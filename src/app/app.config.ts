@@ -27,6 +27,7 @@ import { UpdateIncidentStatusUseCase } from './core/application/use-cases/update
 import { SessionStorageSessionStore } from './core/infrastructure/services/session-storage-session-store';
 import { IncidentStore } from './core/infrastructure/state/incident-store';
 import { ChangeIncidentsStatusUseCase } from './core/application/use-cases/change-incidents-status.use-case';
+import { LocalStorageIncidentRepository } from './core/infrastructure/storage/local-storage-incident.repository';
 
 // Los pipes de formato (`date`, `number`, `currency`) usan el locale activo.
 // Sin registrarlo, Angular solo conoce `en-US` y las fechas saldrían en inglés.
@@ -48,7 +49,8 @@ export const appConfig: ApplicationConfig = {
     ),
     { provide: LOCALE_ID, useValue: 'es' },
     // --- Puertos y adaptadores ---------------------------------------------
-    { provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
+    //{ provide: INCIDENT_REPOSITORY, useExisting: IncidentApi },
+    { provide: INCIDENT_REPOSITORY, useExisting: LocalStorageIncidentRepository },
     { provide: USER_REPOSITORY, useExisting: UserService },
     { provide: AUTH_GATEWAY, useExisting: AuthService },
     { provide: SESSION_STORE, useExisting: SessionStorageSessionStore },
